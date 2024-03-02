@@ -5,6 +5,8 @@ import sys
 from sys import stdin
 import numpy as np
 
+#hahahahhaha
+
 def safe_print(n):
     print(n)
     sys.stdout.flush() # Please flush the output for each print, otherwise it will result in a Time Limit Exceeded!
