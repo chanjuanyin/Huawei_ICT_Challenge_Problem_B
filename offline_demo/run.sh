@@ -1,3 +1,3 @@
 #!/bin/bash
 
-python3 Example_code.py 1.in 1.ans
+python3 offline_demo/Example_code.py offline_demo/input_directory/1.in offline_demo/input_directory/1.ans
