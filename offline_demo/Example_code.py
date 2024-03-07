@@ -4,7 +4,7 @@ import sys
 from sys import stdin
 import Blackbox as blk
 import os
-
+import time
 
 def safe_print(n):
     print(n)
@@ -111,8 +111,12 @@ W1 = bf_norm_multiple_stream(W1)
 W2 = bf_norm_multiple_stream(W2)
 input_weight_1 = mtx2outputdata(W1)
 input_weight_2 = mtx2outputdata(W2)
+start_time = time.time()
 rece_Y1 = blk.blackboxSystem(input_weight_1, input_weight_2)
 Y1 = read_blackbox(rece_Y1)
+end_time = time.time()
+elapsed_time = end_time - start_time
+print(f"Elapsed time: {elapsed_time} seconds")
 print(Y1.shape)
 
 W1 = np.zeros((32, 32)) + 1j * np.zeros((32, 32))
@@ -122,7 +126,11 @@ W1 = bf_norm_multiple_stream(W1)
 W2 = bf_norm_multiple_stream(W2)
 input_weight_1 = mtx2outputdata(W1)
 input_weight_2 = mtx2outputdata(W2)
+start_time = time.time()
 rece_Y2 = blk.blackboxSystem(input_weight_1, input_weight_2)
+end_time = time.time()
+elapsed_time = end_time - start_time
+print(f"Elapsed time: {elapsed_time} seconds")
 Y2 = read_blackbox(rece_Y2)
 print(Y2.shape)
 
