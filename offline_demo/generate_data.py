@@ -48,6 +48,9 @@ def generate_S():
 def generate_c():
     c = zero_rand(50, 300) * 2 + 1j * zero_rand(50, 300) * 2
     return c
+
+def generate_ans(signal_num):
+    return np.full(signal_num, 100, dtype=int)
     
 def generate_data(case: int):
     if case == 1:
@@ -68,7 +71,10 @@ def generate_data(case: int):
     
     s1, s2 = generate_S()
     c = generate_c()
-    return data_H1, data_H2, data_H3, s1, s2, c
+    
+    ans = generate_ans(signal_num)
+    
+    return data_H1, data_H2, data_H3, s1, s2, c, ans
 
 def format_inputdata(input_data):
     
@@ -76,14 +82,15 @@ def format_inputdata(input_data):
     
     return " ".join(data_list), len(data_list)
 
-def save_data(file_name, case, h1, h2, h3, s1, s2, c):
+def save_data(file_name_1, file_name_2, case, h1, h2, h3, s1, s2, c, ans):
     h1_string, h1_string_length = format_inputdata(h1)
     h2_string, h2_string_length = format_inputdata(h2)
     h3_string, h3_string_length = format_inputdata(h3)
     s1_string, s1_string_length = format_inputdata(s1)
     s2_string, s2_string_length = format_inputdata(s2)
     c_string, c_string_length = format_inputdata(c)
-    with open(file_name, "w") as f:
+    ans_string = " ".join([str(ans[i]) for i in range(ans.shape[0])])
+    with open(file_name_1, "w") as f:
         f.write(str(case))
         f.write("\n{}\n".format(h1_string_length-1))
         f.write(h1_string)
@@ -98,7 +105,11 @@ def save_data(file_name, case, h1, h2, h3, s1, s2, c):
         f.write("\n{}\n".format(s2_string_length-1))
         f.write(s2_string)
         f.write("\n")
-        
+        f.close()
+    with open(file_name_2, "w") as f:
+        f.write(str(ans_string))
+        f.write("\n")
+        f.close()
 
 if __name__ == "__main__":
     directory_path = os.path.join("offline_demo", "input_directory")
@@ -106,5 +117,5 @@ if __name__ == "__main__":
         os.makedirs(directory_path)
         print(f"Directory '{directory_path}' created.")
     for case in range(1, 5):
-        data_H1, data_H2, data_H3, s1, s2, c = generate_data(case)
-        save_data(os.path.join(directory_path, "{}.in".format(case)), 1, data_H1, data_H2, data_H3, s1, s2, c)
+        data_H1, data_H2, data_H3, s1, s2, c, ans = generate_data(case)
+        save_data(os.path.join(directory_path, "{}.in".format(case)), os.path.join(directory_path, "{}.ans".format(case)), case, data_H1, data_H2, data_H3, s1, s2, c, ans)
