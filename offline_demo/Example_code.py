@@ -58,7 +58,7 @@ def norm_multiple_stream_result(L_est):
 
 def mtx2outputdata(input_data):
     stream_num = input_data.shape[1] # Example input_data matrix size: 32 x N_stream.
-    input_data_ravel = input_data.ravel(order="F") # matrix to vector
+    input_data_ravel = input_data.ravel(order="F").reshape(1,-1) # matrix to vector
     input_data_ravel = np.round(input_data_ravel,decimals=6) # 6 decimals float
     
     output = ''
@@ -74,7 +74,7 @@ def mtx2outputdata(input_data):
 def mtx2outputdata_result(input_data):
     stream_num = input_data.shape[0] # Example input_data matrix size: N_target X 32.
     input_data = input_data.T
-    input_data_ravel = input_data.ravel(order="F").reshape(1,-1) # matrix to vector
+    input_data_ravel = input_data.ravel(order="F") # matrix to vector
     input_data_ravel = np.round(input_data_ravel,decimals=6) # 6 decimals float
     
     output = ''
@@ -102,6 +102,32 @@ def read_blackbox(input_data):
 
 
 
+# Try here:
+
+W1 = np.zeros((32, 32)) + 1j * np.zeros((32, 32))
+W2 = (np.ones((32, 32)) + 1j * np.zeros((32, 32))) * (1/32)
+W1[0,0] = 1.
+W1 = bf_norm_multiple_stream(W1)
+W2 = bf_norm_multiple_stream(W2)
+input_weight_1 = mtx2outputdata(W1)
+input_weight_2 = mtx2outputdata(W2)
+rece_Y1 = blk.blackboxSystem(input_weight_1, input_weight_2)
+Y1 = read_blackbox(rece_Y1)
+print(Y1.shape)
+
+W1 = np.zeros((32, 32)) + 1j * np.zeros((32, 32))
+W2 = (np.ones((32, 32)) + 1j * np.zeros((32, 32))) * (1/32)
+W1[0,1] = 1.
+W1 = bf_norm_multiple_stream(W1)
+W2 = bf_norm_multiple_stream(W2)
+input_weight_1 = mtx2outputdata(W1)
+input_weight_2 = mtx2outputdata(W2)
+rece_Y2 = blk.blackboxSystem(input_weight_1, input_weight_2)
+Y2 = read_blackbox(rece_Y2)
+print(Y2.shape)
+
+Y_diff = Y1 / Y2
+print_numpy_array(Y_diff, "Y_diff")
 
 
 
