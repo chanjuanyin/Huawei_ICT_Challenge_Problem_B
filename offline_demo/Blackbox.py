@@ -10,6 +10,41 @@ import numpy as np
 def safe_print(n):
     print(n)
     sys.stdout.flush() # Please flush the output for each print, otherwise it will result in a Time Limit Exceeded!
+    
+def print_numpy_array(complex_array, file_name = "np_array"):
+    directory_path = os.path.join("offline_demo", "print_directory")
+    if not os.path.exists(directory_path):
+        os.makedirs(directory_path)
+        print(f"Directory '{directory_path}' created.")
+    file_path = os.path.join(directory_path, file_name + ".csv")
+        
+    dimensions = complex_array.ndim
+    shape = complex_array.shape
+    # Open a CSV file for writing
+    with open(file_path, 'w') as file:
+        # Function to flatten the array and iterate through its elements
+        def iterate_and_print(array):
+            for element in np.nditer(array):
+                real_part = element.real
+                imag_part = element.imag
+                file.write(f"{real_part} {imag_part}, ")
+
+        # Handle different dimensions
+        if dimensions == 1:
+            iterate_and_print(complex_array)
+        elif dimensions == 2:
+            for row in range(shape[0]):
+                iterate_and_print(complex_array[row, :])
+                file.write("\n")
+        elif dimensions == 3:
+            for depth in range(shape[0]):
+                file.write(f"Depth {depth + 1}:\n")
+                for row in range(shape[1]):
+                    iterate_and_print(complex_array[depth, row, :])
+                    file.write("\n")
+                file.write("\n")
+        else:
+            print("Unsupported dimension for CSV export.")
 
 
 def read_inputdata(input_data):
@@ -47,7 +82,6 @@ def whole_system(DL0_bf,DL1_bf):
 
     sig0_signal = DL0_freq*data_para['DL_ch_set_DL0']
     sig1_signal = DL1_freq*data_para['DL_ch_set_DL1']
-
     UL_signal_rate = np.multiply(np.multiply(np.multiply(sig0_signal, sig0_signal), np.conj(sig1_signal)),data_para['calib_c'])    
         
     rx_signal_freq = np.zeros(shape=(UL_signal_rate.shape[0],32,UL_signal_rate.shape[1]), dtype = "complex128")
@@ -103,10 +137,11 @@ def calc_score(input_data):
 
     dl_channel = signal_dl0channel.T
     dl_Nullproj = np.eye(32) - dl_channel*np.linalg.inv(dl_channel.H*dl_channel)*dl_channel.H
-    if signal_num_targ == 2:
-        after_proj_power = dl_Nullproj*data_para['DL_ch_set_DL0']
-    else:
-        exit_with_judge_error(f'Invalid signal num : {signal_num}')
+    # if signal_num_targ == 2:
+    #     after_proj_power = dl_Nullproj*data_para['DL_ch_set_DL0']
+    # else:
+    #     exit_with_judge_error(f'Invalid signal num : {signal_num}')
+    after_proj_power = dl_Nullproj*data_para['DL_ch_set_DL0']
     result = 0
 
     for ii in range(signal_num_targ):
@@ -155,8 +190,16 @@ def blackboxSystem(input_1,input_2):
 
     calib_c = data_para['calib_c'][:,:signal_num]
     data_para['calib_c'] = calib_c*np.diag(m)
-    if signal_num == 2:
-        signal_num_targ = 2
+    # if signal_num == 2:
+    #     signal_num_targ = 2
+    if sys.argv[3] == "1":
+        signal_num_targ = 4
+    elif sys.argv[3] == "2":
+        signal_num_targ = 6
+    elif sys.argv[3] == "3":
+        signal_num_targ = 6
+    elif sys.argv[3] == "4":
+        signal_num_targ = 10
     ul_channel_all = []
     dl0_channel_all = []
     ul_Nullproj = []

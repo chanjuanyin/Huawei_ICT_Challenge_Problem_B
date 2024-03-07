@@ -74,7 +74,7 @@ def mtx2outputdata(input_data):
 def mtx2outputdata_result(input_data):
     stream_num = input_data.shape[0] # Example input_data matrix size: N_target X 32.
     input_data = input_data.T
-    input_data_ravel = input_data.ravel(order="F") # matrix to vector
+    input_data_ravel = input_data.ravel(order="F").reshape(1,-1) # matrix to vector
     input_data_ravel = np.round(input_data_ravel,decimals=6) # 6 decimals float
     
     output = ''
@@ -163,7 +163,7 @@ for ii in range(inter_num-1):
 
 #******Example code*******
 # N_target can be [1,10]
-N_target = 2 # Notices that the N_target is different for each case. Contestants program need to estimate the number of target signals first.
+N_target = 4 # Notices that the N_target is different for each case. Contestants program need to estimate the number of target signals first.
 
 L_est = np.mat((np.random.randn(N_target,32) + 1j*np.random.randn(N_target,32)))
 # L_est Normalization
