@@ -20,32 +20,14 @@ def mtx2outputdata(input_data):
     #safe_print(output)
     return output
 
-def find_infr(y : np.matrix) -> list:
+def find_inter() -> list:
     '''ratio_matrix is expected to be 32,300 shape
        y is expected to be 32,300 shape
        w1 is expected to be 32,32 shape, with first column have one 1, the other all 0
        w2 is expected to be 32,32 shape, and we will fixed w2 elements to 1/32'''
 
-    infr_list = []
-    
-    for y_row in range(32):
-        sum_row = 0
-        for y_col in range(300):
-            magnitude = np.linalg.norm((y[y_row,y_col]))
-            sum_row += magnitude
-        avg_row = sum_row / 300
-        if 0.999 <= avg_row <= 1.001:
-            infr_list.append(y_row)
-    
-    return infr_list
-    
-
-    
-if __name__ == "__main__":
-    in_file = "/Users/zhangsiwei/Desktop/NTU/coding projects/huawei/Huawei_ICT_Challenge_Problem_B/offline_demo/input_directory/1.in"
-    ans_file = "/Users/zhangsiwei/Desktop/NTU/coding projects/huawei/Huawei_ICT_Challenge_Problem_B/offline_demo/input_directory/1.ans"  
-    bx = blk(in_file, ans_file)
     indices_and_norms = []
+    inter_list = []
     for i in range(32):
         matrix_W1 = np.mat(np.zeros((32, 32))) + 1j * np.mat(np.zeros((32, 32)))
         matrix_W1[i,0] = 1.0 + 0.0j
@@ -56,7 +38,19 @@ if __name__ == "__main__":
         # if i==17: 
         #     print(y, "y_17") 
         magnitude = np.linalg.norm(y[i, :]) 
-        indices_and_norms.append((i, magnitude)) 
-    print(indices_and_norms)
-        
+        indices_and_norms.append([i, magnitude]) 
+    # print (indices_and_norms)
     
+    for pair in indices_and_norms:
+        if pair[1] >1000:
+            inter_list.append(pair[0])
+    return inter_list
+    
+
+    
+if __name__ == "__main__":
+    in_file = "/Users/zhangsiwei/Desktop/NTU/coding projects/huawei/Huawei_ICT_Challenge_Problem_B/offline_demo/input_directory/3.in"
+    ans_file = "/Users/zhangsiwei/Desktop/NTU/coding projects/huawei/Huawei_ICT_Challenge_Problem_B/offline_demo/input_directory/3.ans"  
+    bx = blk(in_file, ans_file)
+    inter_list = find_inter()
+    print(inter_list)
