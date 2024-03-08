@@ -17,8 +17,8 @@ def mtx2outputdata(input_data):
     return output
 
 if __name__ == "__main__":
-    in_file = "../offline_demo/input_directory/1.in"
-    ans_file = "../offline_demo/input_directory/1.ans"
+    in_file = "/Users/zhangsiwei/Desktop/NTU/coding projects/huawei/Huawei_ICT_Challenge_Problem_B/offline_demo/input_directory/1.in"
+    ans_file = "/Users/zhangsiwei/Desktop/NTU/coding projects/huawei/Huawei_ICT_Challenge_Problem_B/offline_demo/input_directory/1.ans"  
     bx = BloackBox(in_file, ans_file)
     matrix_W1 = np.mat(np.zeros((32, 32))) + 1j * np.mat(np.zeros((32, 32)))
     matrix_W1[0,0] = 1.0 + 0.0j
