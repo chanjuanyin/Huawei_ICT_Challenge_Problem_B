@@ -117,8 +117,8 @@ rece_Y1 = blk.blackboxSystem(input_weight_1, input_weight_2)
 Y1 = read_blackbox(rece_Y1)
 end_time = time.time()
 elapsed_time = end_time - start_time
-print(f"Elapsed time: {elapsed_time} seconds")
-print(Y1.shape)
+# print(f"Elapsed time: {elapsed_time} seconds")
+# print(Y1.shape)
 
 W1 = np.mat(np.zeros((32, 32))) + 1j * np.mat(np.zeros((32, 32)))
 W2 = (np.mat(np.ones((32, 32))) + 1j * np.mat(np.zeros((32, 32)))) * (1/32)
@@ -131,12 +131,12 @@ start_time = time.time()
 rece_Y2 = blk.blackboxSystem(input_weight_1, input_weight_2)
 end_time = time.time()
 elapsed_time = end_time - start_time
-print(f"Elapsed time: {elapsed_time} seconds")
+# print(f"Elapsed time: {elapsed_time} seconds")
 Y2 = read_blackbox(rece_Y2)
-print(Y2.shape)
+# print(Y2.shape)
 
 Y_diff = Y1 / Y2
-print_numpy_array(Y_diff, "Y_diff")
+# print_numpy_array(Y_diff, "Y_diff")
 
 
 #*************** trying deep learning ********************
@@ -161,7 +161,7 @@ for i in range(32):
 # print(Y_giant.shape)
 # print_numpy_array(Y_giant[:,:,5], "Y_giant_6")
 
-global Y_matrix, N_target
+global Y_matrix, N_target, epoch_total, finite_difference, learning_rate
 
 for i in range(32):
     for j in range(0, i):
@@ -176,8 +176,8 @@ Y_matrix = np.mat(Y_matrix)
 
 N_target = 6
 
-# First N_target rows are H^2
-# Next N_target rows are L^2
+# First N_target rows are L^2
+# Next N_target rows are N^2
 X_initializer = np.random.rand(N_target*2, 32) - 0.5 + 1j * (np.random.rand(N_target*2, 32) - 0.5)
 X_initializer = (X_initializer.T / np.linalg.norm(X_initializer, axis = 1)).T
 
@@ -213,9 +213,101 @@ start_time = time.time()
 loss = compute_loss(X_initializer)
 end_time = time.time()
 elapsed_time = end_time - start_time
-print(f"Elapsed time: {elapsed_time} seconds")
-print(loss)
+# safe_print(f"Elapsed time: {elapsed_time} seconds")
+# safe_print(loss)
 
+epoch_total = 25
+finite_difference = 0.01
+learning_rate = []
+learning_rate_helper = [1., 0.25, 0.1, 0.025, 0.01]
+for rate in learning_rate_helper:
+    for j in range(5):
+        learning_rate.append(rate)
+
+def calculate_final_score(H1):
+    
+    # Compute the SVD
+    U, S, Vh = np.linalg.svd(H1)
+
+    # Tolerance for identifying zero singular values
+    tol = max(H1.shape) * np.spacing(np.max(S))
+
+    # Determine the rank of the matrix
+    rank = np.sum(S > tol)
+
+    # The number of null space vectors is the number of columns minus the rank
+    num_null_vectors = H1.shape[1] - rank
+
+    # If you need exactly 6 vectors and if they exist, select the first 6
+    if num_null_vectors >= N_target:
+        null_vectors = Vh[-N_target:, :].T
+    else:
+        raise ValueError(f"Less than {N_target} linearly independent null space vectors found.")
+
+    # null_vectors now contains 6 linearly independent null space vectors
+
+    L_est = mtx2outputdata_result(np.mat(null_vectors.T))
+    Score = blk.calc_score(L_est)
+    
+    return Score
+
+def adam_optimizer(X_initializer, gradients, m, v, t, learning_rate=0.001, beta1=0.9, beta2=0.999, epsilon=1e-8):
+    # Update biased first moment estimate
+    m = beta1 * m + (1 - beta1) * gradients
+
+    # Update biased second raw moment estimate
+    v = beta2 * v + (1 - beta2) * np.square(gradients)
+
+    # Compute bias-corrected first moment estimate
+    m_hat = m / (1 - beta1 ** t)
+
+    # Compute bias-corrected second raw moment estimate
+    v_hat = v / (1 - beta2 ** t)
+
+    # Update the weights
+    X_initializer -= learning_rate * m_hat / (np.sqrt(v_hat) + epsilon)
+
+    return X_initializer, m, v
+
+for epoch_num in range(epoch_total+1):
+    start_time = time.time()
+    print_numpy_array(X_initializer, f"X_initializer_epoch_{epoch_num}")
+    loss_this_epoch = compute_loss(X_initializer)
+    H1 = np.sqrt(X_initializer[N_target:, :])
+    H1 = (H1.T / np.linalg.norm(H1, axis = 1)).T
+    H1 = norm_multiple_stream_result(H1)
+    score = calculate_final_score(H1)
+    safe_print(f"Epoch number = {epoch_num} ; loss = {loss_this_epoch} ; final score = {score}")
+    if epoch_num == epoch_total:
+        break
+    gradient = np.zeros((N_target*2, 32)) + 1j * np.zeros((N_target*2, 32))
+    for i in range(N_target*2):
+        for j in range(32):
+            temp1 = np.zeros((N_target*2, 32)) + 1j * np.zeros((N_target*2, 32))
+            temp1[i,j] = finite_difference * 1.
+            new_loss = compute_loss(X_initializer + temp1)
+            gradient_val = (new_loss - loss_this_epoch) / finite_difference * 1.
+            temp2 = np.zeros((N_target*2, 32)) + 1j * np.zeros((N_target*2, 32))
+            temp2[i,j] = finite_difference * 1j
+            new_loss = compute_loss(X_initializer + temp2)
+            gradient_val += (new_loss - loss_this_epoch) / finite_difference * 1j
+            gradient[i,j] = gradient_val
+    print_numpy_array(gradient, f"gradient_epoch_{epoch_num}")
+    
+    # ***************** Normal Optimizer *********************
+    X_initializer = X_initializer - gradient * learning_rate[epoch_num]
+    # ***************** End of Normal Optimizer *********************
+    
+    # ***************** Adam Optimizer *********************
+    if epoch_num==0:
+        m = np.zeros_like(X_initializer)
+        v = np.zeros_like(X_initializer)
+    X_initializer, m, v = adam_optimizer(X_initializer, gradient, m, v, epoch_num+1, learning_rate[epoch_num])
+    # ***************** End of Adam Optimizer *********************
+    
+    end_time = time.time()
+    elapsed_time = end_time - start_time
+    safe_print(f"Elapsed time: {elapsed_time} seconds")
 
 
 #*************** end of trying deep learning ********************
