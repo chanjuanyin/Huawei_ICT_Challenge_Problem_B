@@ -58,7 +58,7 @@ def norm_multiple_stream_result(L_est):
 
 def mtx2outputdata(input_data):
     stream_num = input_data.shape[1] # Example input_data matrix size: 32 x N_stream.
-    input_data_ravel = input_data.ravel(order="F").reshape(1,-1) # matrix to vector
+    input_data_ravel = input_data.ravel(order="F") # matrix to vector
     input_data_ravel = np.round(input_data_ravel,decimals=6) # 6 decimals float
     
     output = ''
@@ -104,8 +104,8 @@ def read_blackbox(input_data):
 
 # Try here:
 
-W1 = np.zeros((32, 32)) + 1j * np.zeros((32, 32))
-W2 = (np.ones((32, 32)) + 1j * np.zeros((32, 32))) * (1/32)
+W1 = np.mat(np.zeros((32, 32))) + 1j * np.mat(np.zeros((32, 32)))
+W2 = (np.mat(np.ones((32, 32))) + 1j * np.mat(np.zeros((32, 32)))) * (1/32)
 W1[0,0] = 1.
 W1 = bf_norm_multiple_stream(W1)
 W2 = bf_norm_multiple_stream(W2)
@@ -119,8 +119,8 @@ elapsed_time = end_time - start_time
 print(f"Elapsed time: {elapsed_time} seconds")
 print(Y1.shape)
 
-W1 = np.zeros((32, 32)) + 1j * np.zeros((32, 32))
-W2 = (np.ones((32, 32)) + 1j * np.zeros((32, 32))) * (1/32)
+W1 = np.mat(np.zeros((32, 32))) + 1j * np.mat(np.zeros((32, 32)))
+W2 = (np.mat(np.ones((32, 32))) + 1j * np.mat(np.zeros((32, 32)))) * (1/32)
 W1[0,1] = 1.
 W1 = bf_norm_multiple_stream(W1)
 W2 = bf_norm_multiple_stream(W2)
