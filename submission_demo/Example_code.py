@@ -71,6 +71,39 @@ def read_blackbox():
 # ---Step 1: Input 'Start'---
 line1 = stdin.readline().strip()
 
+# ****************** try ********************
+
+# Try here:
+
+W1 = np.mat(np.zeros((32, 32))) + 1j * np.mat(np.zeros((32, 32)))
+W2 = (np.mat(np.ones((32, 32))) + 1j * np.mat(np.zeros((32, 32)))) * (1/32)
+W1[0,0] = 1.
+W1 = bf_norm_multiple_stream(W1)
+W2 = bf_norm_multiple_stream(W2)
+mtx2outputdata(W1)
+mtx2outputdata(W2)
+start_time = time.time()
+Y1 = read_blackbox()
+end_time = time.time()
+elapsed_time = end_time - start_time
+
+W1 = np.mat(np.zeros((32, 32))) + 1j * np.mat(np.zeros((32, 32)))
+W2 = (np.mat(np.ones((32, 32))) + 1j * np.mat(np.zeros((32, 32)))) * (1/32)
+W1[0,1] = 1.
+W1 = bf_norm_multiple_stream(W1)
+W2 = bf_norm_multiple_stream(W2)
+mtx2outputdata(W1)
+mtx2outputdata(W2)
+start_time = time.time()
+Y2 = read_blackbox()
+end_time = time.time()
+elapsed_time = end_time - start_time
+
+Y_diff = Y1 / Y2
+
+
+# ****************** try ********************
+
 # ---Step 1: Output W1 W2---
 # N_stream1, N_stream2 can be [1,32]
 N_stream1 = 4 
