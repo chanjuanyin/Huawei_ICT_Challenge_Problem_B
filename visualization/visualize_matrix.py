@@ -36,9 +36,9 @@ app = Flask(__name__)
 
 # Initial values for matrices W1, W2, and Y
 matrix_W1 = np.mat(np.zeros((32, 32))) + 1j * np.mat(np.zeros((32, 32)))
-matrix_W1[0,0] = 1.0 + 0.0j
+matrix_W1[0,13] = 1.0 + 0.0j
 matrix_W2 = np.mat(np.zeros((32, 32))) + 1j * np.mat(np.zeros((32, 32)))
-matrix_W2[0,0] = 1.0 + 0.0j
+matrix_W2[0,13] = 1.0 + 0.0j
 matrix_Y = np.zeros((32, 300), dtype=complex)
 selected_Y = 'Y'  # Default selected Y matrix
 y_matrices = {
