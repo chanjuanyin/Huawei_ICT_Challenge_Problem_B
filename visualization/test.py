@@ -26,4 +26,4 @@ if __name__ == "__main__":
     input_weight_1 = mtx2outputdata(matrix_W1)
     input_weight_2 = mtx2outputdata(matrix_W1)
     Y = bx.blackboxSystem(input_weight_1, input_weight_2)
-    print(Y.shape)
+    

@@ -20,8 +20,8 @@ def mtx2outputdata(input_data):
     return output
 
 def calculate_Y(matrix_W1, matrix_W2):
-    in_file = "../offline_demo/input_directory/1.in"
-    ans_file = "../offline_demo/input_directory/1.ans"
+    in_file = "/Users/zhangsiwei/Desktop/NTU/coding projects/huawei/Huawei_ICT_Challenge_Problem_B/offline_demo/input_directory/1.in"
+    ans_file = "/Users/zhangsiwei/Desktop/NTU/coding projects/huawei/Huawei_ICT_Challenge_Problem_B/offline_demo/input_directory/1.ans"
     bx = BloackBox(in_file, ans_file)
     input_weight_1 = mtx2outputdata(matrix_W1)
     input_weight_2 = mtx2outputdata(matrix_W2)

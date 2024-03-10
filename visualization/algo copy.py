@@ -51,6 +51,27 @@ class Solution:
                 else: self.N_tar = np.linalg.matrix_rank(y_01)
             self.N_intf = len(self.h_idx)
             print(i, np.linalg.matrix_rank(y_01))
+        if self.N_tar == -1: #means case 3 case 4
+            x=0
+            matrix_01 = np.mat(np.zeros((32, 32))) + 1j * np.mat(np.zeros((32, 32)))
+            matrix_01[x,0] = 1.0 + 0.0*1j
+            matrix_01_input = mtx2outputdata(matrix_01)
+
+            
+            y_01 = self.bx.blackboxSystem(matrix_01_input, matrix_01_input)
+            cov_matrix = np.cov(y_01, rowvar=False)
+            eigenvalues, eigenvectors = np.linalg.eig(cov_matrix)
+            # Construct the matrix 'D' of eigenvalues
+            D = np.diag(eigenvalues)
+
+            # The matrix 'E' is simply the matrix of eigenvectors
+            E = eigenvectors
+            D_sqrt_inv = np.diag(1 / np.sqrt(np.diag(D)))
+            E_H = E.conj().T
+            Q = E @ D_sqrt_inv @ E_H
+            y_clear =   y_01 @ Q
+            self.N_tar = np.linalg.matrix_rank(y_clear)
+            print(0, np.linalg.matrix_rank(y_clear))
         return self.h_idx
     
     def one_trial(self):
@@ -76,11 +97,11 @@ class Solution:
 
 
 if __name__ == "__main__":
-    in_file = "/Users/zhangsiwei/Desktop/NTU/coding projects/huawei/Huawei_ICT_Challenge_Problem_B/offline_demo/input_directory/1.in"
-    ans_file = "/Users/zhangsiwei/Desktop/NTU/coding projects/huawei/Huawei_ICT_Challenge_Problem_B/offline_demo/input_directory/1.ans"
+    in_file = "/Users/zhangsiwei/Desktop/NTU/coding projects/huawei/Huawei_ICT_Challenge_Problem_B/offline_demo/input_directory/3.in"
+    ans_file = "/Users/zhangsiwei/Desktop/NTU/coding projects/huawei/Huawei_ICT_Challenge_Problem_B/offline_demo/input_directory/3.ans"
 
     sol = Solution(in_file, ans_file)
     sol.run()
     print(sol.ratio_matrix.shape)
-    print(sol.h_idx)
-    print(sol.N_intf, sol.N_tar)
+    print("the interference index are: " ,sol.h_idx)
+    print('Number of interference :', sol.N_intf,"\nNumber of target: " ,sol.N_tar)
