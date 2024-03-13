@@ -50,7 +50,7 @@ class Solution:
                 if self.N_tar != -1: assert np.linalg.matrix_rank(y_01) == self.N_tar
                 else: self.N_tar = np.linalg.matrix_rank(y_01)
             self.N_intf = len(self.h_idx)
-            print(i, np.linalg.matrix_rank(y_01))
+            print(i,  np.linalg.matrix_rank(y_01))
         return self.h_idx
     
     def one_trial(self):
@@ -82,11 +82,11 @@ class Solution:
 
 
 if __name__ == "__main__":
-    in_file = "/Users/zhangsiwei/Desktop/NTU/coding projects/huawei/Huawei_ICT_Challenge_Problem_B/offline_demo/input_directory/1.in"
-    ans_file = "/Users/zhangsiwei/Desktop/NTU/coding projects/huawei/Huawei_ICT_Challenge_Problem_B/offline_demo/input_directory/1.ans"
+    in_file = "/Users/zhangsiwei/Desktop/NTU/coding projects/huawei/Huawei_ICT_Challenge_Problem_B/offline_demo/input_directory/3.in"
+    ans_file = "/Users/zhangsiwei/Desktop/NTU/coding projects/huawei/Huawei_ICT_Challenge_Problem_B/offline_demo/input_directory/3.ans"
 
     sol = Solution(in_file, ans_file)
     sol.run()
     print(sol.ratio_matrix.shape)
     print(sol.h_idx)
-    print(sol.N_intf, sol.N_tar)
+    print(sol.N_intf, "number of target:",sol.N_tar)

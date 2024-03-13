@@ -52,26 +52,15 @@ class Solution:
             self.N_intf = len(self.h_idx)
             print(i, np.linalg.matrix_rank(y_01))
         if self.N_tar == -1: #means case 3 case 4
-            x=0
+            x=18
             matrix_01 = np.mat(np.zeros((32, 32))) + 1j * np.mat(np.zeros((32, 32)))
             matrix_01[x,0] = 1.0 + 0.0*1j
             matrix_01_input = mtx2outputdata(matrix_01)
 
             
             y_01 = self.bx.blackboxSystem(matrix_01_input, matrix_01_input)
-            cov_matrix = np.cov(y_01, rowvar=False)
-            eigenvalues, eigenvectors = np.linalg.eig(cov_matrix)
-            # Construct the matrix 'D' of eigenvalues
-            D = np.diag(eigenvalues)
-
-            # The matrix 'E' is simply the matrix of eigenvectors
-            E = eigenvectors
-            D_sqrt_inv = np.diag(1 / np.sqrt(np.diag(D)))
-            E_H = E.conj().T
-            Q = E @ D_sqrt_inv @ E_H
-            y_clear =   y_01 @ Q
-            self.N_tar = np.linalg.matrix_rank(y_clear)
-            print(0, np.linalg.matrix_rank(y_clear))
+            self.N_tar = np.linalg.matrix_rank(y_01)
+            print(0, np.linalg.matrix_rank(y_01))
         return self.h_idx
     
     def one_trial(self):
