@@ -44,13 +44,16 @@ class Solution:
             matrix_01[i,0] = 1.0 + 0.0*1j
             matrix_01_input = mtx2outputdata(matrix_01)
             y_01 = self.bx.blackboxSystem(matrix_01_input, matrix_01_input)
+            if i==1:
+                print(type(y_01[0][0]))
+                # print('y_01[0][0]=', y_01[0][0])
             if self.test_large(y_01[i], order = test_order):
                 self.h_idx.append(i)
             else:
                 if self.N_tar != -1: assert np.linalg.matrix_rank(y_01) == self.N_tar
                 else: self.N_tar = np.linalg.matrix_rank(y_01)
             self.N_intf = len(self.h_idx)
-            print(i,  np.linalg.matrix_rank(y_01))
+            # print(i,  np.linalg.matrix_rank(y_01))
         return self.h_idx
     
     def one_trial(self):
@@ -82,8 +85,8 @@ class Solution:
 
 
 if __name__ == "__main__":
-    in_file = "/Users/zhangsiwei/Desktop/NTU/coding projects/huawei/Huawei_ICT_Challenge_Problem_B/offline_demo/input_directory/3.in"
-    ans_file = "/Users/zhangsiwei/Desktop/NTU/coding projects/huawei/Huawei_ICT_Challenge_Problem_B/offline_demo/input_directory/3.ans"
+    in_file = "/Users/zhangsiwei/Desktop/NTU/coding projects/huawei/Huawei_ICT_Challenge_Problem_B/offline_demo/input_directory/1.in"
+    ans_file = "/Users/zhangsiwei/Desktop/NTU/coding projects/huawei/Huawei_ICT_Challenge_Problem_B/offline_demo/input_directory/1.ans"
 
     sol = Solution(in_file, ans_file)
     sol.run()

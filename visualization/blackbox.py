@@ -181,7 +181,6 @@ class BloackBox:
         
         rx_signal_tot_freq = np.mat(rx_signal_tot_freq)
         rx_signal_tot_freq = rx_signal_tot_freq.T
-
         input_data_ravel = rx_signal_tot_freq.ravel(order="F") # Convert matrix to a vector
         input_data_ravel = np.round(input_data_ravel,decimals=6) # 6 decimals float
 
