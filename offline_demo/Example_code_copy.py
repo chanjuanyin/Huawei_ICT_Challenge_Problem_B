@@ -141,7 +141,7 @@ def test_large(vector, order=0.1):
 
 N_tar=-1
 h_idx = []
-test_order = 10
+test_order = 15
 if test_large(Y[0], order=test_order):
     h_idx.append(0)
 
@@ -158,19 +158,23 @@ for i in range(1, 32):
 
     if test_large(y_01[i], order=test_order):
         h_idx.extend([i])
+        print(f'interference found in {i}th loop')
     else:
-        U, S, Vh = np.linalg.svd(y_01)
-        tolerance = 1e-5 
-        rank = np.sum(S > tolerance)
         if N_tar != -1:
-            # Check if current h_idx length is larger than 20 and adjust N_tar accordingly
-            if len(h_idx) > 20:
-                N_tar = rank - 1
-            else:
-                N_tar = rank
-            print(rank)
+            if len(h_idx) >10:
+                U, S, Vh = np.linalg.svd(y_01)
+                tolerance = 1e-5 
+                rank = np.sum(S > tolerance)
+                print(rank)
+                N_tar = rank -1
+            # assert rank == N_tar
+            # assert np.linalg.matrix_rank(y_01) == N_tar
         else:
-            N_tar = np.linalg.matrix_rank(y_01)
+            U, S, Vh = np.linalg.svd(y_01)
+            tolerance = 1e-5 
+            rank = np.sum(S > tolerance)
+            print(rank)
+            N_tar = rank 
     
 print(h_idx, N_tar)
 
@@ -189,17 +193,33 @@ print(h_idx, N_tar)
 #         h_idx.extend([i])
 #     else:
 #         if N_tar != -1:
+#             print('enter case 1 or 2')
 #             U, S, Vh = np.linalg.svd(y_01)
-#             tolerance = 1e-5 
+#             tolerance = 1e-5
 #             rank = np.sum(S > tolerance)
 #             print(rank)
 #             N_tar = rank
 #             # assert rank == N_tar
 #             # assert np.linalg.matrix_rank(y_01) == N_tar
 #         else:
-#             N_tar = np.linalg.matrix_rank(y_01)
+#             print('enter case 3 or 4')
+#             matrix_01 = np.mat(np.zeros((32, 32))) + 1j * np.mat(np.zeros((32, 32)))
+#             matrix_01[1, 0] = 1.0 + 0.0*1j
+#             matrix_01 = bf_norm_multiple_stream(matrix_01)
+#             matrix_02 = matrix_01
+#             # Output W1 W2
+#             input_weight_1 = mtx2outputdata(matrix_01)
+#             input_weight_2 = mtx2outputdata(matrix_02)
+#             rece_Y = blk.blackboxSystem(input_weight_1, input_weight_2)
+#             y_01 = read_blackbox(rece_Y)
+#             U, S, Vh = np.linalg.svd(y_01)
+#             tolerance = 1e-5
+#             rank = np.sum(S > tolerance)
+#             print(rank)
+#             N_tar = rank -1
+
     
-# print(h_idx, N_tar)
+print(h_idx, N_tar)
 
 L_est = np.mat((np.random.randn(N_tar,32) + 1j*np.random.randn(N_tar,32)))
 # L_est Normalization
@@ -219,4 +239,4 @@ L_est = norm_multiple_stream_result(L_est)
 L_est = mtx2outputdata_result(L_est)
 Score = blk.calc_score(L_est)
 
-"run: python offline_demo/Example_code_copy.py offline_demo/input_directory/4.in offline_demo/input_directory/4.ans 4"
+"run: python offline_demo/Example_code_copy.py offline_demo/input_directory/1.in offline_demo/input_directory/1.ans 1"
