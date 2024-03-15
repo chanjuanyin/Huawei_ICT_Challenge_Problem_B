@@ -157,6 +157,7 @@ def calc_score(input_data):
 def blackboxSystem(input_1,input_2):
     global data_para, signal_num_targ
     try:
+        # print(len(sys.argv),sys.argv)
         input_in = open(sys.argv[1], 'r').read().strip()
         split_data = input_in.split('\n') #Split data by \n
         case = int(split_data[0]) # Case index
@@ -180,7 +181,7 @@ def blackboxSystem(input_1,input_2):
         data_para['DL1_datatmp'] = np.mat(data_tmpDL1.reshape(32,300)).T
     except Exception as e:
         exit_with_judge_error(f'Invalid data in input file')
-
+    # print('b')
     m = [int(x) for x in open(sys.argv[2], 'r').read().strip().split(' ')]
     if not 0 <= int(m[0]) <= 200:
         exit_with_judge_error(f'Invalid data in ans file: {m}')
@@ -278,3 +279,4 @@ def blackboxSystem(input_1,input_2):
         output = output + m
     return output
     #safe_print(output)
+    # return rx_signal_tot_freqs
