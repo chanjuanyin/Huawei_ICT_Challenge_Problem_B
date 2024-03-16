@@ -11,6 +11,8 @@ def safe_print(n):
     print(n)
     sys.stdout.flush() # Please flush the output for each print, otherwise it will result in a Time Limit Exceeded!
     
+# ************ Changes start here **********************
+
 def print_numpy_array(complex_array, file_name = "np_array"):
     directory_path = os.path.join("offline_demo", "print_directory")
     if not os.path.exists(directory_path):
@@ -46,6 +48,7 @@ def print_numpy_array(complex_array, file_name = "np_array"):
         else:
             print("Unsupported dimension for CSV export.")
 
+# ************ Changes end here **********************
 
 def read_inputdata(input_data):
     m = input_data.split(' ')
@@ -65,6 +68,18 @@ def whole_system(DL0_bf,DL1_bf):
 
     bfsize0 = bf_tmp.shape[0]
 
+    # ************ Changes start here **********************
+    print_numpy_array(data_para['DL0_datatmp'].T, "data_para_DL0_datatmp")
+    
+    ratio_matrix = np.zeros((32, 300)) + 1j * np.zeros((32, 300))
+    ratio_matrix[0,:] = 1.0 + 0.0 * 1j
+
+    for i in range(1, 32):
+        ratio_matrix[i,:] = ((data_para['DL0_datatmp'].T[i,:]/data_para['DL0_datatmp'].T[0,:]))
+    
+    print_numpy_array(ratio_matrix, "real_ratio_matrix")
+    
+    # ************ Changes end here **********************
 
     DL0_datatmp_local = data_para['DL0_datatmp'][:,0:bfsize0]
     DL0_datatmp_local = np.mat(DL0_datatmp_local)
@@ -103,7 +118,9 @@ def exit_with_judge_error(message):
 
 def accept_with_score(score):
     print(f'Accepted! Score: {score}', file=sys.stderr)
-    exit()
+    # ************ Changes start here **********************
+    # exit()
+    # ************ Changes end here **********************
 
 def calc_score(input_data):
     global data_para,signal_num_targ
@@ -280,3 +297,135 @@ def blackboxSystem(input_1,input_2):
     return output
     #safe_print(output)
     # return rx_signal_tot_freqs
+    
+# ************ Changes start here **********************
+
+def blackboxSystem_no_h(input_1,input_2):
+    global data_para, signal_num_targ
+    try:
+        # print(len(sys.argv),sys.argv)
+        input_in = open(sys.argv[1][:-2] + "no_h", 'r').read().strip()
+        split_data = input_in.split('\n') #Split data by \n
+        case = int(split_data[0]) # Case index
+        if not 1 <= case <= 4:
+            exit_with_judge_error(f'Invalid data in input file: {case}')
+        #Read preloaded data in 1.in
+        dataDL0 = read_inputdata(split_data[2])
+        dataDL1 = read_inputdata(split_data[4])
+        dataUL = read_inputdata(split_data[6])
+        data_calib = read_inputdata(split_data[8])
+        data_tmpDL0 = read_inputdata(split_data[10])
+        data_tmpDL1 = read_inputdata(split_data[12]) 
+        signal_num = int(len(dataDL0)/32)
+        # Reshape data to matrices
+        data_para = {}
+        data_para['DL_ch_set_DL0'] = np.mat(dataDL0.reshape(signal_num,32)).T
+        data_para['DL_ch_set_DL1'] = np.mat(dataDL1.reshape(signal_num,32)).T
+        data_para['DL_ch_set_UL'] = np.mat(dataUL.reshape(signal_num,32)).T
+        data_para['calib_c'] = np.mat(data_calib.reshape(50,300)).T
+        data_para['DL0_datatmp'] = np.mat(data_tmpDL0.reshape(32,300)).T
+        data_para['DL1_datatmp'] = np.mat(data_tmpDL1.reshape(32,300)).T
+    except Exception as e:
+        exit_with_judge_error(f'Invalid data in input file')
+    # print('b')
+    m = [int(x) for x in open(sys.argv[2], 'r').read().strip().split(' ')]
+    if not 0 <= int(m[0]) <= 200:
+        exit_with_judge_error(f'Invalid data in ans file: {m}')
+    for ii in range(signal_num):
+        m[ii] = int(m[ii])
+    m = np.array(m)
+
+    calib_c = data_para['calib_c'][:,:signal_num]
+    data_para['calib_c'] = calib_c*np.diag(m)
+    # if signal_num == 2:
+    #     signal_num_targ = 2
+    if sys.argv[3] == "1":
+        signal_num_targ = 4
+    elif sys.argv[3] == "2":
+        signal_num_targ = 6
+    elif sys.argv[3] == "3":
+        signal_num_targ = 6
+    elif sys.argv[3] == "4":
+        signal_num_targ = 10
+    ul_channel_all = []
+    dl0_channel_all = []
+    ul_Nullproj = []
+
+    score = 0
+    try:
+        m = input_1.strip().split(' ')#Split by ' '
+        if m[0] == 'END': # When program end, calculate score
+            safe_print('Roger that') # Tell submission program, ready to receive estimated data now
+            calc_score() # Calculate score
+    except Exception as e:
+        exit_with_wrong_answer(f'Protocol error, last write was {line}')
+    if not np.mod(len(m),32) == 0:
+        exit_with_wrong_answer(f'Protocol error')
+    complex_len = int(len(m)/2)
+    n = np.zeros(shape=(complex_len),dtype='complex128')
+    for ii in range(len(m)):
+        try:
+            m[ii] = float(m[ii])
+        except Exception as e:
+            exit_with_wrong_answer(f'Protocol error, could not read')
+    for ii in range(complex_len):
+        n[ii] = m[2*ii] + m[2*ii+1]*1j
+
+    input_weight_mtx1 = np.mat(n)
+
+    stream_num1 = input_weight_mtx1.shape[1]/32
+    input_weight_mtx1 = input_weight_mtx1.reshape(int(stream_num1),32)
+
+    if not 0.999 <= np.linalg.norm(input_weight_mtx1)**2 <= 1.001:
+        exit_with_wrong_answer(f'Invalid data in input weight 1!')
+
+
+    try:
+        m = input_2.strip().split(' ')
+    except Exception as e:
+        exit_with_wrong_answer(f'Protocol error, last write was {line}')
+    if not np.mod(len(m),32) == 0:
+        exit_with_wrong_answer(f'Protocol error')
+
+    complex_len = int(len(m)/2)
+    n = np.zeros(shape=(complex_len),dtype='complex128')
+    for ii in range(len(m)):
+        try:
+            m[ii] = float(m[ii])
+        except Exception as e:
+            exit_with_wrong_answer(f'Protocol error, could not read')
+    for ii in range(complex_len):
+        n[ii] = m[2*ii] + m[2*ii+1]*1j
+
+    input_weight_mtx2 = np.mat(n)
+
+    stream_num2 = input_weight_mtx2.shape[1]/32
+    input_weight_mtx2 = input_weight_mtx2.reshape(int(stream_num2),32)
+
+    if not 0.999 <= np.linalg.norm(input_weight_mtx2)**2 <= 1.001:
+        exit_with_wrong_answer(f'Invalid data in input weight 2!')
+
+    DL0_bf = input_weight_mtx1
+    DL1_bf = input_weight_mtx2
+
+    rx_signal_tot_freq = whole_system(DL0_bf,DL1_bf) # output matrix to submission program. 300X32.
+
+    rx_signal_tot_freq = np.mat(rx_signal_tot_freq)
+    rx_signal_tot_freq = rx_signal_tot_freq.T
+
+    input_data_ravel = rx_signal_tot_freq.ravel(order="F") # Convert matrix to a vector
+    input_data_ravel = np.round(input_data_ravel,decimals=6) # 6 decimals float
+
+    output = ''
+    for ii in range(input_data_ravel.shape[1]):
+        if ii == input_data_ravel.shape[1]-1:
+            m = str(np.real(input_data_ravel[0,ii])) + ' ' + str(np.imag(input_data_ravel[0,ii]))
+        else:
+            m = str(np.real(input_data_ravel[0,ii])) + ' ' + str(np.imag(input_data_ravel[0,ii])) + ' '
+        output = output + m
+    return output
+    #safe_print(output)
+    # return rx_signal_tot_freqs
+
+# ************ Changes end here **********************
+    

@@ -1,6 +1,7 @@
 import random
 import numpy as np
 import os
+import copy
 
 def zero_rand(*args):
     return np.random.rand(*args) - 0.5
@@ -12,6 +13,10 @@ def generate_H(N_intf, N_target):
     intf_H3 = (zero_rand(N_intf, 32) + 1j * zero_rand(N_intf, 32)) * 1e-5
     j_indexes = [(i, x) for i, x in enumerate(random.sample(list(range(32)), k = N_intf))]
     j_record = []
+    
+    intf_H1_no_h = copy.deepcopy(intf_H1)
+    intf_H2_no_h = copy.deepcopy(intf_H2)
+    intf_H3_no_h = copy.deepcopy(intf_H3)
     
     for j_index in j_indexes:
         j = (zero_rand(1) + 1j * zero_rand(1))
@@ -31,15 +36,24 @@ def generate_H(N_intf, N_target):
     h1 = np.concatenate([intf_H1, target_H1], axis=0)
     h1 = (h1.T / np.linalg.norm(h1, axis = 1)).T
     
+    target_H1 = (target_H1.T / np.linalg.norm(target_H1, axis = 1)).T
+    h1_no_h = np.concatenate([intf_H1_no_h, target_H1], axis=0)
+    
     h2 = np.concatenate([intf_H2, target_H2], axis=0)
     h2 = (h2.T / np.linalg.norm(h2, axis = 1)).T
+    
+    target_H2 = (target_H2.T / np.linalg.norm(target_H2, axis = 1)).T
+    h2_no_h = np.concatenate([intf_H2_no_h, target_H2], axis=0)
     
     h3 = np.concatenate([intf_H3, target_H3], axis=0)
     h3 = (h3.T / np.linalg.norm(h3, axis = 1)).T
     
+    target_H3 = (target_H3.T / np.linalg.norm(target_H3, axis = 1)).T
+    h3_no_h = np.concatenate([intf_H3_no_h, target_H3], axis=0)
+    
     j_record = sorted(j_record, key=lambda x: x[0])
     
-    return h1, h2, h3, j_record
+    return h1, h1_no_h, h2, h2_no_h, h3, h3_no_h, j_record
 
 def generate_S():
     s1 = zero_rand(32, 300) + 1j * zero_rand(32, 300)
@@ -71,14 +85,14 @@ def generate_data(case: int):
         N_target = 10 # I tested on Kattis
     signal_num = N_intf + N_target
     print(f"N_intf:{N_intf}, N_target:{N_target}")
-    data_H1, data_H2, data_H3, j_record = generate_H(N_intf, N_target)
+    data_H1, data_H1_no_h, data_H2, data_H2_no_h, data_H3, data_H3_no_h, j_record = generate_H(N_intf, N_target)
     
     s1, s2 = generate_S()
     c = generate_c()
     
     ans = generate_ans(signal_num)
     
-    return data_H1, data_H2, data_H3, s1, s2, c, ans, j_record
+    return data_H1, data_H1_no_h, data_H2, data_H2_no_h, data_H3, data_H3_no_h, s1, s2, c, ans, j_record
 
 def format_inputdata(input_data):
     
@@ -86,10 +100,13 @@ def format_inputdata(input_data):
     
     return " ".join(data_list), len(data_list)
 
-def save_data(file_name_1, file_name_2, file_name_3, case, h1, h2, h3, s1, s2, c, ans, j_record):
+def save_data(file_name_1, file_name_2, file_name_3, file_name_4, case, h1, h1_no_h, h2, h2_no_h, h3, h3_no_h, s1, s2, c, ans, j_record):
     h1_string, h1_string_length = format_inputdata(h1)
     h2_string, h2_string_length = format_inputdata(h2)
     h3_string, h3_string_length = format_inputdata(h3)
+    h1_no_h_string, h1_no_h_string_length = format_inputdata(h1_no_h)
+    h2_no_h_string, h2_no_h_string_length = format_inputdata(h2_no_h)
+    h3_no_h_string, h3_no_h_string_length = format_inputdata(h3_no_h)
     s1_string, s1_string_length = format_inputdata(s1)
     s2_string, s2_string_length = format_inputdata(s2)
     c_string, c_string_length = format_inputdata(c)
@@ -123,6 +140,22 @@ def save_data(file_name_1, file_name_2, file_name_3, case, h1, h2, h3, s1, s2, c
         f.write("\n{}".format(j_record_indexes))
         f.write("\n{}\n".format(j_record_string))
         f.close()
+    with open(file_name_4, "w") as f:
+        f.write(str(case))
+        f.write("\n{}\n".format(h1_no_h_string_length-1))
+        f.write(h1_no_h_string)
+        f.write("\n{}\n".format(h2_no_h_string_length-1))
+        f.write(h2_no_h_string)
+        f.write("\n{}\n".format(h3_no_h_string_length-1))
+        f.write(h3_no_h_string)
+        f.write("\n{}\n".format(c_string_length-1))
+        f.write(c_string)
+        f.write("\n{}\n".format(s1_string_length-1))
+        f.write(s1_string)
+        f.write("\n{}\n".format(s2_string_length-1))
+        f.write(s2_string)
+        f.write("\n")
+        f.close()
 
 if __name__ == "__main__":
     directory_path = os.path.join("offline_demo", "input_directory")
@@ -130,5 +163,5 @@ if __name__ == "__main__":
         os.makedirs(directory_path)
         print(f"Directory '{directory_path}' created.")
     for case in range(1, 5):
-        data_H1, data_H2, data_H3, s1, s2, c, ans, j_record = generate_data(case)
-        save_data(os.path.join(directory_path, "{}.in".format(case)), os.path.join(directory_path, "{}.ans".format(case)), os.path.join(directory_path, "{}.meta".format(case)), case, data_H1, data_H2, data_H3, s1, s2, c, ans, j_record)
+        data_H1, data_H1_no_h, data_H2, data_H2_no_h, data_H3, data_H3_no_h, s1, s2, c, ans, j_record = generate_data(case)
+        save_data(os.path.join(directory_path, "{}.in".format(case)), os.path.join(directory_path, "{}.ans".format(case)), os.path.join(directory_path, "{}.meta".format(case)), os.path.join(directory_path, "{}.no_h".format(case)), case, data_H1, data_H1_no_h, data_H2, data_H2_no_h, data_H3, data_H3_no_h, s1, s2, c, ans, j_record)
