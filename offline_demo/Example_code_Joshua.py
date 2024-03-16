@@ -456,7 +456,7 @@ else: # Case 3 and case 4 work here
         W1 = W1_record[giant_sort_array[k][1]]
         W1 = np.asarray(W1)
         W1 = np.conjugate(W1)
-        v1 = h_vectors_record[:,giant_sort_array[k][2]]
+        v1 = ratio_matrix[:,giant_sort_array[k][2]]
         v1 = v1.reshape((32, 1))
         v2 = np.dot(W1, v1)
         L_est[:,k] = v2[:,0]
