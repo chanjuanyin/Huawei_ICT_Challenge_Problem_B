@@ -427,7 +427,7 @@ else: # Case 3 and case 4 work here
     
     print("=============================")
     
-    print("跑跑实验")
+    print("跑跑实验 1")
     
     # 跑跑实验
     
@@ -476,85 +476,145 @@ else: # Case 3 and case 4 work here
     print("跑跑实验 3")
     
     # 继续哦
+    # 解释一下我在干什么，这一步的目的是要算出 H1_matrix_square_mixed
+    # 而 H1_matrix_square_mixed 的 row vector 的 linear span 基本上代表了 np.square(H1_matrix) 的 row vectors 的 linear span
+    # 注意 np.square(H1_matrix) 的意思是 H1 matrix 去 element-wise square
+    # 拿到了 H1_matrix_square_mixed，基本上已经很接近很接近我们需要的答案了
+    # 可是再进一步我目前还没有想到该如何 proceed
     
-    giant_sort_array = []
-    W1_record = []
+    H1_matrix_square_mixed = np.zeros((N_tar, 32)) + 1j * np.zeros((N_tar, 32))
     
     W2 = (np.mat(np.ones((32, 32))) + 1j * np.mat(np.zeros((32, 32)))) * (1/32)
     W2 = bf_norm_multiple_stream(W2)
+    for j in range(N_tar):
+        for i in range(32):
+            v = ratio_matrix[:,j]
+            v = v.reshape((32,1))
+            # x = np.zeros((32, 1)) + 1j * np.zeros((32, 1))
+            # x[i][0] =  1.0 + 0.0 * 1j
+            A = np.zeros((32, 32), dtype=complex)
+            A[i][i] = np.conjugate(1 / v[i][0])
+            # print_numpy_array(np.dot(np.conjugate(A), v), f"A_mul_v_at_row_{i}")
+            W1 = np.mat(A)
+            W1 = bf_norm_multiple_stream(W1)
+            input_weight_1 = mtx2outputdata(W1)
+            input_weight_2 = mtx2outputdata(W2)
+            Y_with_inference = blk.blackboxSystem(input_weight_1, input_weight_2)
+            Y_with_inference = read_blackbox(Y_with_inference)
+            estimated_real_Y_without_inference = np.asarray(estimate_real_Y_without_inference(W1, Y_with_inference))
+            H1_matrix_square_mixed[j, i] = estimated_real_Y_without_inference[0,j]
     
-    number_of_trials = 1000
-    print(f"number_of_trials = {number_of_trials}")
-    for i in range(number_of_trials): # 跑 1000 次也好不了多少
-        W1 = np.mat((np.random.randn(32,N_stream1) + 1j*np.random.randn(32,N_stream1)))
-        W1 = bf_norm_multiple_stream(W1)
-        W1_record.append(W1)
-        input_weight_1 = mtx2outputdata(W1)
-        input_weight_2 = mtx2outputdata(W2)
-        Y_with_inference = blk.blackboxSystem(input_weight_1, input_weight_2)
-        Y_with_inference = read_blackbox(Y_with_inference)
-        estimated_real_Y_without_inference = estimate_real_Y_without_inference(W1, Y_with_inference)
-        norms = np.linalg.norm(estimated_real_Y_without_inference, axis=0)
-        for j in range(300):
-            giant_sort_array.append(tuple([norms[j], i, j]))
+    # H1_matrix_square_mixed = (H1_matrix_square_mixed.T / np.linalg.norm(H1_matrix_square_mixed, axis = 1)).T
+    # print(f"np.square(H1_matrix).shape = {np.square(H1_matrix).shape}")
+    # print(f"H1_matrix_square_mixed.shape = {H1_matrix_square_mixed.shape}")
+    print_numpy_array(np.square(H1_matrix), "np.square(H1_matrix)")
+    print_numpy_array(H1_matrix_square_mixed, "H1_matrix_square_mixed")
     
-    giant_sort_array = sorted(giant_sort_array, key=lambda x: x[0])
+    # 验证是否正确
+    # 先要去拿 coordinate matrix
+    H1_matrix_square_pinv = np.linalg.pinv(np.square(H1_matrix).T)
+    Coordinate_Matrix = H1_matrix_square_pinv @ H1_matrix_square_mixed.T
+    # 从 coordinate matrix 拿回原本的 H1_matrix_square_mixed matrix
+    H1_matrix_square_mixed_new = np.square(H1_matrix).T @ Coordinate_Matrix
+    H1_matrix_square_mixed_new = H1_matrix_square_mixed_new.T
+    print_numpy_array(H1_matrix_square_mixed_new, f"H1_matrix_square_mixed_new")
     
-    null_space_vectors_main = np.zeros((32, 32-N_tar)) + 1j * np.zeros((32, 32-N_tar))
-    null_space_vectors_check_rank = np.zeros((32, 32-N_tar)) + 1j * np.zeros((32, 32-N_tar))
-    count = 0
-    k = 0
-    while count < 32-N_tar and k < 200:
-        print(f"At position k = {k} we have : {giant_sort_array[k]}")
-        W1 = W1_record[giant_sort_array[k][1]]
-        W1 = np.asarray(W1)
-        W1 = np.conjugate(W1)
-        v1 = ratio_matrix[:,giant_sort_array[k][2]]
-        v1 = v1.reshape((32, 1))
-        v2 = np.dot(W1, v1)
-        print_numpy_array(np.dot(H1_matrix, v1), f"check_if_null_enough_{k}")
-        null_space_vectors_check_rank[:,count] = v2[:,0]
-        U, S, Vh = np.linalg.svd(null_space_vectors_check_rank)
-        tolerance = 0.1 # need a more lenient tolerance, such that we can reject a not so linearly independent vector
-        rank = np.sum(S > tolerance)
-        print(f"rank = {rank}")
-        if rank == count+1:
-            print("accepted")
-            null_space_vectors_main[:,count] = v2[:,0]
-            count += 1
-        else:
-            print("rejected")
-        k += 1
+    # 验证出来我的想法是成功的
     
-    # for k in range(32-N_tar):
-    #     print(f"At position k we have : {giant_sort_array[k]}")
-    #     W1 = W1_record[giant_sort_array[k][1]]
-    #     W1 = np.asarray(W1)
-    #     W1 = np.conjugate(W1)
-    #     v1 = ratio_matrix[:,giant_sort_array[k][2]]
-    #     v1 = v1.reshape((32, 1))
-    #     v2 = np.dot(W1, v1)
-    #     null_space_vectors[:,k] = v2[:,0]
-    
-    null_space_vectors = null_space_vectors_main.reshape((32-N_tar, 32))
-    null_space_vectors = np.mat(null_space_vectors)
-    null_space_vectors = norm_multiple_stream_result(null_space_vectors)
-    null_space_vectors = np.asarray(null_space_vectors)
-    print_numpy_array(null_space_vectors, "null_space_vectors")
-    
-    U, S, Vh = np.linalg.svd(null_space_vectors)
-    tolerance = 1e-10
-    null_mask = (S <= tolerance)
-    null_indices = np.where(null_mask)[0]
-    L_est = Vh[-(N_tar):, :]
-    print(f"L_est.shape = {L_est.shape}")
-    L_est = np.mat(L_est)
+    # 可是依然不是最终的结果
+    L_est = np.mat(H1_matrix_square_mixed)
     L_est = norm_multiple_stream_result(L_est)
     safe_print('END')
     line2 = stdin.readline().strip()
     L_est = mtx2outputdata_result(L_est)
     Score = blk.calc_score(L_est)
     print(f"Score = {Score}")
+    
+    
+    print("=============================")
+    
+    # print("跑跑实验 4")
+    
+    # # 继续哦
+    
+    # giant_sort_array = []
+    # W1_record = []
+    
+    # W2 = (np.mat(np.ones((32, 32))) + 1j * np.mat(np.zeros((32, 32)))) * (1/32)
+    # W2 = bf_norm_multiple_stream(W2)
+    
+    # number_of_trials = 1000
+    # print(f"number_of_trials = {number_of_trials}")
+    # for i in range(number_of_trials): # 跑 1000 次也好不了多少
+    #     W1 = np.mat((np.random.randn(32,N_stream1) + 1j*np.random.randn(32,N_stream1)))
+    #     W1 = bf_norm_multiple_stream(W1)
+    #     W1_record.append(W1)
+    #     input_weight_1 = mtx2outputdata(W1)
+    #     input_weight_2 = mtx2outputdata(W2)
+    #     Y_with_inference = blk.blackboxSystem(input_weight_1, input_weight_2)
+    #     Y_with_inference = read_blackbox(Y_with_inference)
+    #     estimated_real_Y_without_inference = estimate_real_Y_without_inference(W1, Y_with_inference)
+    #     norms = np.linalg.norm(estimated_real_Y_without_inference, axis=0)
+    #     for j in range(300):
+    #         giant_sort_array.append(tuple([norms[j], i, j]))
+    
+    # giant_sort_array = sorted(giant_sort_array, key=lambda x: x[0])
+    
+    # null_space_vectors_main = np.zeros((32, 32-N_tar)) + 1j * np.zeros((32, 32-N_tar))
+    # null_space_vectors_check_rank = np.zeros((32, 32-N_tar)) + 1j * np.zeros((32, 32-N_tar))
+    # count = 0
+    # k = 0
+    # while count < 32-N_tar and k < 200:
+    #     print(f"At position k = {k} we have : {giant_sort_array[k]}")
+    #     W1 = W1_record[giant_sort_array[k][1]]
+    #     W1 = np.asarray(W1)
+    #     W1 = np.conjugate(W1)
+    #     v1 = ratio_matrix[:,giant_sort_array[k][2]]
+    #     v1 = v1.reshape((32, 1))
+    #     v2 = np.dot(W1, v1)
+    #     print_numpy_array(np.dot(H1_matrix, v1), f"check_if_null_enough_{k}")
+    #     null_space_vectors_check_rank[:,count] = v2[:,0]
+    #     U, S, Vh = np.linalg.svd(null_space_vectors_check_rank)
+    #     tolerance = 0.1 # need a more lenient tolerance, such that we can reject a not so linearly independent vector
+    #     rank = np.sum(S > tolerance)
+    #     print(f"rank = {rank}")
+    #     if rank == count+1:
+    #         print("accepted")
+    #         null_space_vectors_main[:,count] = v2[:,0]
+    #         count += 1
+    #     else:
+    #         print("rejected")
+    #     k += 1
+    
+    # # for k in range(32-N_tar):
+    # #     print(f"At position k we have : {giant_sort_array[k]}")
+    # #     W1 = W1_record[giant_sort_array[k][1]]
+    # #     W1 = np.asarray(W1)
+    # #     W1 = np.conjugate(W1)
+    # #     v1 = ratio_matrix[:,giant_sort_array[k][2]]
+    # #     v1 = v1.reshape((32, 1))
+    # #     v2 = np.dot(W1, v1)
+    # #     null_space_vectors[:,k] = v2[:,0]
+    
+    # null_space_vectors = null_space_vectors_main.reshape((32-N_tar, 32))
+    # null_space_vectors = np.mat(null_space_vectors)
+    # null_space_vectors = norm_multiple_stream_result(null_space_vectors)
+    # null_space_vectors = np.asarray(null_space_vectors)
+    # print_numpy_array(null_space_vectors, "null_space_vectors")
+    
+    # U, S, Vh = np.linalg.svd(null_space_vectors)
+    # tolerance = 1e-10
+    # null_mask = (S <= tolerance)
+    # null_indices = np.where(null_mask)[0]
+    # L_est = Vh[-(N_tar):, :]
+    # print(f"L_est.shape = {L_est.shape}")
+    # L_est = np.mat(L_est)
+    # L_est = norm_multiple_stream_result(L_est)
+    # safe_print('END')
+    # line2 = stdin.readline().strip()
+    # L_est = mtx2outputdata_result(L_est)
+    # Score = blk.calc_score(L_est)
+    # print(f"Score = {Score}")
     
     # print("=============================")
     
@@ -678,90 +738,90 @@ else: # Case 3 and case 4 work here
 
     # #*************** end of trying deep learning ********************
     
-    print("=============================")
+    # print("=============================")
     
-    print("模仿 deep learning 的手法")
+    # print("模仿 deep learning 的手法")
     
-    for i in range(32):
-        Y_giant[i,:,i] = Y_giant[i,:,i] - h_vectors_record[i,:]
+    # for i in range(32):
+    #     Y_giant[i,:,i] = Y_giant[i,:,i] - h_vectors_record[i,:]
     
-    # basis_vectors refer to H3 matrix
-    sheet_0 = Y_giant[:,:,1]
-    U, S, Vh = np.linalg.svd(sheet_0)
-    basis_vectors = U[:, :N_tar]
-    basis_vectors = basis_vectors.T # basis_vectors refer to H3 matrix
-    H3_vectors = (basis_vectors.T / np.linalg.norm(basis_vectors, axis = 1)).T
+    # # basis_vectors refer to H3 matrix
+    # sheet_0 = Y_giant[:,:,1]
+    # U, S, Vh = np.linalg.svd(sheet_0)
+    # basis_vectors = U[:, :N_tar]
+    # basis_vectors = basis_vectors.T # basis_vectors refer to H3 matrix
+    # H3_vectors = (basis_vectors.T / np.linalg.norm(basis_vectors, axis = 1)).T
     
-    for i in range(32):
-        if i==0:
-            Y_matrix = Y_giant[:,:,0]
-        else:
-            Y_matrix = np.concatenate((Y_matrix, Y_giant[:,:,i]), axis=0)
-    Y_matrix = np.mat(Y_matrix)
-    print(f"Y_matrix.shape = {Y_matrix.shape}")
+    # for i in range(32):
+    #     if i==0:
+    #         Y_matrix = Y_giant[:,:,0]
+    #     else:
+    #         Y_matrix = np.concatenate((Y_matrix, Y_giant[:,:,i]), axis=0)
+    # Y_matrix = np.mat(Y_matrix)
+    # print(f"Y_matrix.shape = {Y_matrix.shape}")
 
-    def compute_loss(H1_initializer_square):
+    # def compute_loss(H1_initializer_square):
 
-        for i in range(N_tar):
-            sheet = np.outer(H3_vectors[i, :], H1_initializer_square[i, :])
-            # print_numpy_array(sheet, "sheet_{}".format(i))
-            X_vector = sheet.T.reshape((32 * 32,1))
-            if i==0:
-                X_matrix = X_vector
-            else:
-                X_matrix = np.concatenate((X_matrix, X_vector), axis=1)
-        # print(f"X_matrix.shape = {X_matrix.shape}")
+    #     for i in range(N_tar):
+    #         sheet = np.outer(H3_vectors[i, :], H1_initializer_square[i, :])
+    #         # print_numpy_array(sheet, "sheet_{}".format(i))
+    #         X_vector = sheet.T.reshape((32 * 32,1))
+    #         if i==0:
+    #             X_matrix = X_vector
+    #         else:
+    #             X_matrix = np.concatenate((X_matrix, X_vector), axis=1)
+    #     # print(f"X_matrix.shape = {X_matrix.shape}")
 
-        I = np.eye(1024, dtype=np.complex128)
-        X_hermitian = np.conjugate(X_matrix.T)
-        XX_hermitian_inv = np.linalg.inv(np.dot(X_hermitian, X_matrix))
-        intermediate_matrix = I - np.dot(np.dot(X_matrix, XX_hermitian_inv), X_hermitian)
-        error_matrix = np.dot(intermediate_matrix, Y_matrix)
-        loss = np.linalg.norm(error_matrix, 'fro')
-        # print(error_matrix.shape)
-        return loss
+    #     I = np.eye(1024, dtype=np.complex128)
+    #     X_hermitian = np.conjugate(X_matrix.T)
+    #     XX_hermitian_inv = np.linalg.inv(np.dot(X_hermitian, X_matrix))
+    #     intermediate_matrix = I - np.dot(np.dot(X_matrix, XX_hermitian_inv), X_hermitian)
+    #     error_matrix = np.dot(intermediate_matrix, Y_matrix)
+    #     loss = np.linalg.norm(error_matrix, 'fro')
+    #     # print(error_matrix.shape)
+    #     return loss
 
-    # H1_initializer are referring to H1 matrix
-    # basis_vectors refer to H3 matrix
-    start_time = time.time()
-    H1_initializer = np.random.rand(N_tar, 32) - 0.5 + 1j * (np.random.rand(N_tar, 32) - 0.5)
-    H1_initializer = (H1_initializer.T / np.linalg.norm(H1_initializer, axis = 1)).T
-    loss = compute_loss(np.square(H1_initializer))
-    end_time = time.time()
-    elapsed_time = end_time - start_time
-    safe_print(f"Elapsed time: {elapsed_time} seconds")
-    safe_print(f"loss = {loss}\n")
+    # # H1_initializer are referring to H1 matrix
+    # # basis_vectors refer to H3 matrix
+    # start_time = time.time()
+    # H1_initializer = np.random.rand(N_tar, 32) - 0.5 + 1j * (np.random.rand(N_tar, 32) - 0.5)
+    # H1_initializer = (H1_initializer.T / np.linalg.norm(H1_initializer, axis = 1)).T
+    # loss = compute_loss(np.square(H1_initializer))
+    # end_time = time.time()
+    # elapsed_time = end_time - start_time
+    # safe_print(f"Elapsed time: {elapsed_time} seconds")
+    # safe_print(f"loss = {loss}\n")
     
-    H1_initializer_list = []
-    record_list = []
-    number_of_random = 10000
-    start_time = time.time()
-    for i in range(number_of_random):
-        # H1_initializer are referring to H1 matrix
-        # basis_vectors refer to H3 matrix
-        H1_initializer = np.random.rand(N_tar, 32) - 0.5 + 1j * (np.random.rand(N_tar, 32) - 0.5)
-        H1_initializer = (H1_initializer.T / np.linalg.norm(H1_initializer, axis = 1)).T
-        loss = compute_loss(np.square(H1_initializer))
-        H1_initializer_list.append(H1_initializer)
-        record_list.append(tuple([loss, i]))
-    end_time = time.time()
-    elapsed_time = end_time - start_time
-    safe_print(f"To compute {number_of_random} number of random trials, the total elapsed time is : {elapsed_time} seconds")
+    # H1_initializer_list = []
+    # record_list = []
+    # number_of_random = 10000
+    # start_time = time.time()
+    # for i in range(number_of_random):
+    #     # H1_initializer are referring to H1 matrix
+    #     # basis_vectors refer to H3 matrix
+    #     H1_initializer = np.random.rand(N_tar, 32) - 0.5 + 1j * (np.random.rand(N_tar, 32) - 0.5)
+    #     H1_initializer = (H1_initializer.T / np.linalg.norm(H1_initializer, axis = 1)).T
+    #     loss = compute_loss(np.square(H1_initializer))
+    #     H1_initializer_list.append(H1_initializer)
+    #     record_list.append(tuple([loss, i]))
+    # end_time = time.time()
+    # elapsed_time = end_time - start_time
+    # safe_print(f"To compute {number_of_random} number of random trials, the total elapsed time is : {elapsed_time} seconds")
     
-    record_list_sorted = sorted(record_list, key=lambda x: x[0])
-    H1_initializer = H1_initializer_list[record_list_sorted[0][1]]
-    print(f"Final loss = {record_list_sorted[0][0]}")
+    # record_list_sorted = sorted(record_list, key=lambda x: x[0])
+    # H1_initializer = H1_initializer_list[record_list_sorted[0][1]]
+    # print(f"Final loss = {record_list_sorted[0][0]}")
     
-    L_est = H1_initializer
-    L_est = (L_est.T / np.linalg.norm(L_est, axis = 1)).T
-    L_est = norm_multiple_stream_result(np.mat(L_est))
-    L_est = mtx2outputdata_result(L_est)
-    Score = blk.calc_score(L_est)
+    # L_est = H1_initializer
+    # L_est = (L_est.T / np.linalg.norm(L_est, axis = 1)).T
+    # L_est = norm_multiple_stream_result(np.mat(L_est))
+    # L_est = mtx2outputdata_result(L_est)
+    # Score = blk.calc_score(L_est)
     
 
-    #*************** end of trying method similar to deep learning ********************
+    # #*************** end of trying method similar to deep learning ********************
     
-    print("=============================")
+    # print("=============================")
     
     
     
