@@ -427,6 +427,54 @@ else: # Case 3 and case 4 work here
     
     print("=============================")
     
+    print("跑跑实验")
+    
+    # 跑跑实验
+    
+    H1_matrix = blk.return_H1_matrix()
+    print(H1_matrix.shape)
+    print_numpy_array(H1_matrix, "H1_matrix")
+    L_est = np.mat(H1_matrix)
+    L_est = norm_multiple_stream_result(L_est)
+    safe_print('END')
+    line2 = stdin.readline().strip()
+    L_est = mtx2outputdata_result(L_est)
+    Score = blk.calc_score(L_est)
+    print(f"Score = {Score}")
+    
+    print("=============================")
+    
+    print("跑跑实验 2")
+    
+    # 跑跑实验 2
+    
+    H1_matrix = blk.return_H1_matrix()
+    print(H1_matrix.shape)
+    print_numpy_array(H1_matrix, "H1_matrix")
+    U, S, Vh = np.linalg.svd(H1_matrix)
+    tolerance = 1e-10
+    null_mask = (S <= tolerance)
+    null_indices = np.where(null_mask)[0]
+    null_space_vectors = Vh[-(32-N_tar):, :]
+    print(f"null_space_vectors.shape = {null_space_vectors.shape}")
+    U, S, Vh = np.linalg.svd(null_space_vectors)
+    tolerance = 1e-10
+    null_mask = (S <= tolerance)
+    null_indices = np.where(null_mask)[0]
+    L_est = Vh[-(N_tar):, :]
+    print(f"L_est.shape = {L_est.shape}")
+    L_est = np.mat(L_est)
+    L_est = norm_multiple_stream_result(L_est)
+    safe_print('END')
+    line2 = stdin.readline().strip()
+    L_est = mtx2outputdata_result(L_est)
+    Score = blk.calc_score(L_est)
+    print(f"Score = {Score}")
+    
+    print("=============================")
+    
+    print("跑跑实验 3")
+    
     # 继续哦
     
     giant_sort_array = []
@@ -450,25 +498,59 @@ else: # Case 3 and case 4 work here
     
     giant_sort_array = sorted(giant_sort_array, key=lambda x: x[0])
     
-    L_est = np.zeros((32, N_tar)) + 1j * np.zeros((32, N_tar))
-    for k in range(N_tar):
-        print(f"At position k we have : {giant_sort_array[k]}")
+    null_space_vectors_main = np.zeros((32, 32-N_tar)) + 1j * np.zeros((32, 32-N_tar))
+    null_space_vectors_check_rank = np.zeros((32, 32-N_tar)) + 1j * np.zeros((32, 32-N_tar))
+    count = 0
+    k = 0
+    while count < 32-N_tar:
+        print(f"At position k = {k} we have : {giant_sort_array[k]}")
         W1 = W1_record[giant_sort_array[k][1]]
         W1 = np.asarray(W1)
         W1 = np.conjugate(W1)
         v1 = ratio_matrix[:,giant_sort_array[k][2]]
         v1 = v1.reshape((32, 1))
         v2 = np.dot(W1, v1)
-        L_est[:,k] = v2[:,0]
-    L_est = np.mat(L_est).T
+        null_space_vectors_check_rank[:,count] = v2[:,0]
+        U, S, Vh = np.linalg.svd(null_space_vectors_check_rank)
+        tolerance = 0.8 # need a more lenient tolerance, such that we can reject a not so linearly independent vector
+        rank = np.sum(S > tolerance)
+        print(f"rank = {rank}")
+        if rank == count+1:
+            print("accepted")
+            null_space_vectors_main[:,count] = v2[:,0]
+            count += 1
+        else:
+            print("rejected")
+        k += 1
+    
+    # for k in range(32-N_tar):
+    #     print(f"At position k we have : {giant_sort_array[k]}")
+    #     W1 = W1_record[giant_sort_array[k][1]]
+    #     W1 = np.asarray(W1)
+    #     W1 = np.conjugate(W1)
+    #     v1 = ratio_matrix[:,giant_sort_array[k][2]]
+    #     v1 = v1.reshape((32, 1))
+    #     v2 = np.dot(W1, v1)
+    #     null_space_vectors[:,k] = v2[:,0]
+    
+    null_space_vectors = null_space_vectors_main.reshape((32-N_tar, 32))
+    print_numpy_array(null_space_vectors, "null_space_vectors")
+    
+    U, S, Vh = np.linalg.svd(null_space_vectors)
+    tolerance = 1e-10
+    null_mask = (S <= tolerance)
+    null_indices = np.where(null_mask)[0]
+    L_est = Vh[-(N_tar):, :]
+    print(f"L_est.shape = {L_est.shape}")
+    L_est = np.mat(L_est)
     L_est = norm_multiple_stream_result(L_est)
     safe_print('END')
     line2 = stdin.readline().strip()
     L_est = mtx2outputdata_result(L_est)
     Score = blk.calc_score(L_est)
-    print("=============================")
+    print(f"Score = {Score}")
     
-
+    print("=============================")
 
 #******************* Case 3 and case 4 work end at here ****************************
 
@@ -491,7 +573,9 @@ line2 = stdin.readline().strip()
 # ---Step 5: Output L_est---
 
 # Output L_est
-mtx2outputdata_result(L_est)
+L_est = mtx2outputdata_result(L_est)
+Score = blk.calc_score(L_est)
+print(f"Score = {Score}")
 print("Number of signal = ",N_tar)
 print(h_idx)
 print("number of interference =",len(h_idx))

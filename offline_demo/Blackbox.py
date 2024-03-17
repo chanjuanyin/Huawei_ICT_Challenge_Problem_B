@@ -158,14 +158,18 @@ def calc_score(input_data):
     #     after_proj_power = dl_Nullproj*data_para['DL_ch_set_DL0']
     # else:
     #     exit_with_judge_error(f'Invalid signal num : {signal_num}')
-    after_proj_power = dl_Nullproj*data_para['DL_ch_set_DL0']
+    # ************ Changes start here **********************
+    after_proj_power = dl_Nullproj*data_para['DL_ch_set_DL0'][:,-signal_num_targ:]
+    # ************ Changes end here **********************
     result = 0
 
     for ii in range(signal_num_targ):
         result_tmp = np.linalg.norm(after_proj_power[:,ii])**2
         result = result + result_tmp
 
-    result = 15*(1 - result/signal_num_targ)
+    # ************ Changes start here **********************
+    result = 100*(1 - result/signal_num_targ)
+    # ************ Changes end here **********************
     result = np.round(result,decimals=6)
     accept_with_score(result) #The submission code need this line
     return result
@@ -299,6 +303,9 @@ def blackboxSystem(input_1,input_2):
     # return rx_signal_tot_freqs
     
 # ************ Changes start here **********************
+
+def return_H1_matrix():
+    return np.asarray(data_para['DL_ch_set_DL0'].T)[-signal_num_targ:,:]
 
 def blackboxSystem_no_h(input_1,input_2):
     global data_para, signal_num_targ
