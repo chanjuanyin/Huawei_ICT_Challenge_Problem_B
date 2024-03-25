@@ -2,7 +2,7 @@
 import numpy as np
 import sys
 from sys import stdin
-# import time
+import time
 
 def safe_print(n):
     print(n)
@@ -387,6 +387,13 @@ else: # Case 3 and case 4 work here
     
     # print("=============================")
     
+    # 调参数一：selected_idx 里面，0 到 299 选 N_tar 个
+    # 调参数二：row_1_idx 和 row_2_idx， 1 到 31 选 2 个不同的
+    
+    selected_idx = [i for i in range(50, N_tar+50)]
+    row_1_idx = 1
+    row_2_idx = 2
+    
     H1_matrix_row_space_estimator_1 = np.zeros((N_tar, 32)) + 1j * np.zeros((N_tar, 32))
     
     W2 = (np.mat(np.ones((32, 32))) + 1j * np.mat(np.zeros((32, 32)))) * (1/32)
@@ -402,7 +409,7 @@ else: # Case 3 and case 4 work here
             mtx2outputdata(W2)
             Y_with_inference = read_blackbox()
             estimated_real_Y_without_inference = np.asarray(estimate_real_Y_without_inference(W1, Y_with_inference))
-            a_square = estimated_real_Y_without_inference.T[30:30+N_tar, 1] # 可以换 column
+            a_square = estimated_real_Y_without_inference[row_1_idx, selected_idx] # 可以换 column
             # record a_square into the first entry
             H1_matrix_row_space_estimator_1[:,0] = a_square
         else:
@@ -414,7 +421,7 @@ else: # Case 3 and case 4 work here
             mtx2outputdata(W2)
             Y_with_inference = read_blackbox()
             estimated_real_Y_without_inference = np.asarray(estimate_real_Y_without_inference(W1, Y_with_inference))
-            b_square = estimated_real_Y_without_inference.T[30:30+N_tar, 1] # 可以换 column
+            b_square = estimated_real_Y_without_inference[row_1_idx, selected_idx] # 可以换 column
             # Compute a_plus_b_square
             W1 = np.mat(np.zeros((32, 32))) + 1j * np.mat(np.zeros((32, 32)))
             W1[0, 0] = 1/np.sqrt(2) + 1j * 0 # 可以换 column
@@ -424,12 +431,12 @@ else: # Case 3 and case 4 work here
             mtx2outputdata(W2)
             Y_with_inference = read_blackbox()
             estimated_real_Y_without_inference = np.asarray(estimate_real_Y_without_inference(W1, Y_with_inference))
-            a_plus_b_square = estimated_real_Y_without_inference.T[30:30+N_tar, 1] # 可以换 column
+            a_plus_b_square = estimated_real_Y_without_inference[row_1_idx, selected_idx] # 可以换 column
             # Record 
             ab = a_plus_b_square - ( a_square / 2 ) - ( b_square / 2 )
             H1_matrix_row_space_estimator_1[:, i] = ab
     
-    
+    time.sleep(5)
     
     H1_matrix_row_space_estimator_2 = np.zeros((N_tar, 32)) + 1j * np.zeros((N_tar, 32))
     
@@ -446,7 +453,7 @@ else: # Case 3 and case 4 work here
             mtx2outputdata(W2)
             Y_with_inference = read_blackbox()
             estimated_real_Y_without_inference = np.asarray(estimate_real_Y_without_inference(W1, Y_with_inference))
-            a_square = estimated_real_Y_without_inference.T[30:30+N_tar, 2] # 可以换 column
+            a_square = estimated_real_Y_without_inference[row_2_idx, selected_idx] # 可以换 column
             # record a_square into the first entry
             H1_matrix_row_space_estimator_2[:,0] = a_square
         else:
@@ -458,7 +465,7 @@ else: # Case 3 and case 4 work here
             mtx2outputdata(W2)
             Y_with_inference = read_blackbox()
             estimated_real_Y_without_inference = np.asarray(estimate_real_Y_without_inference(W1, Y_with_inference))
-            b_square = estimated_real_Y_without_inference.T[30:30+N_tar, 2] # 可以换 column
+            b_square = estimated_real_Y_without_inference[row_2_idx, selected_idx] # 可以换 column
             # Compute a_plus_b_square
             W1 = np.mat(np.zeros((32, 32))) + 1j * np.mat(np.zeros((32, 32)))
             W1[0, 0] = 1/np.sqrt(2) + 1j * 0 # 可以换 column
@@ -468,21 +475,22 @@ else: # Case 3 and case 4 work here
             mtx2outputdata(W2)
             Y_with_inference = read_blackbox()
             estimated_real_Y_without_inference = np.asarray(estimate_real_Y_without_inference(W1, Y_with_inference))
-            a_plus_b_square = estimated_real_Y_without_inference.T[30:30+N_tar, 2] # 可以换 column
+            a_plus_b_square = estimated_real_Y_without_inference[row_2_idx, selected_idx] # 可以换 column
             # Record 
             ab = a_plus_b_square - ( a_square / 2 ) - ( b_square / 2 )
             H1_matrix_row_space_estimator_2[:, i] = ab
     
+    time.sleep(5)
+    
     H1_matrix_row_space_estimator_1 = np.asarray(H1_matrix_row_space_estimator_1)
     H1_matrix_row_space_estimator_2 = np.asarray(H1_matrix_row_space_estimator_2)
     
-    safe_print(H1_matrix_row_space_estimator_1.shape)
-    safe_print(H1_matrix_row_space_estimator_2.shape)
+    index_list = [i for i in range(32)]
+    modified_index_list = [x for idx, x in enumerate(index_list) if idx != row_1_idx and idx != row_2_idx]
     
-    index_list = [0] + [i for i in range(3, 32)]
     
-    H1_matrix_row_space_estimator_1_basis = H1_matrix_row_space_estimator_1[:, index_list]
-    H1_matrix_row_space_estimator_2_basis = H1_matrix_row_space_estimator_2[:, index_list]
+    H1_matrix_row_space_estimator_1_basis = H1_matrix_row_space_estimator_1[:, modified_index_list]
+    H1_matrix_row_space_estimator_2_basis = H1_matrix_row_space_estimator_2[:, modified_index_list]
     
     # 去拿 10 X 300 的 coordinate matrix. 
     basis_vectors_pinv = np.linalg.pinv(H1_matrix_row_space_estimator_1_basis.T)
@@ -494,9 +502,10 @@ else: # Case 3 and case 4 work here
     # print(sheet_new.shape) # Will get (31, 300)
     
     sheet_new = sheet_new.T
-    safe_print(sheet_new.shape)
     
-    H1_matrix_row_space_estimator_2[:,2] = sheet_new[:,2]
+    H1_matrix_row_space_estimator_2[:,row_2_idx] = sheet_new[:,row_2_idx]
+    
+    time.sleep(5)
     
     L_est = np.mat(H1_matrix_row_space_estimator_2)
     L_est = norm_multiple_stream_result(L_est)
