@@ -173,6 +173,7 @@ if N_tar == -1: #means case 3 case 4
 #******************* Case 1 and case 2 work start athere ****************************
 
 if len(h_idx) <= 10: # Case 1 and case 2 work here
+    # 调参数 1：你可以 randomize clean_idx，你应还是能看得懂 clean_idx 代表着什么的
     # print(f"h_idx = {h_idx}")
     all_idx = set(range(32))
     for idx in h_idx:
@@ -185,52 +186,47 @@ if len(h_idx) <= 10: # Case 1 and case 2 work here
     
     W2 = (np.mat(np.ones((32, 32))) + 1j * np.mat(np.zeros((32, 32)))) * (1/32)
     W2 = bf_norm_multiple_stream(W2)
+    
+    # 调参数 2，3：
+    # 这里先介绍什么参数可以调
+    # 首先是你看我是有 3 个步骤的，先 compute a_square，再是 compute b_square，然后是 a_divide_sqrt_2_plus_b_divide_sqrt_2_square
+    # 在每一个步骤里面，有 2 个参数可以调
+    # 第一个是，W1 matrix，3 个步骤都是针对 column 0，你可以换成 column 1, 2, 3 (记住是 3 个步骤一起换)
+    # 第二个是，Y_with_inference matrix 每次都只截取 column 0，你可以换成 0 to 299 任何一个数 (记住是 3 个步骤一起换)
+    
     for i in range(32):
         if i==0:
             # Compute a_square
             W1 = np.mat(np.zeros((32, 32))) + 1j * np.mat(np.zeros((32, 32)))
-            W1[0,0] = 1.
+            W1[0,0] = 1. # 可以换 column
             W1 = bf_norm_multiple_stream(W1)
             mtx2outputdata(W1)
             mtx2outputdata(W2)
             Y_with_inference = read_blackbox()
-            a_square = Y_with_inference[clean_idx, 0]
+            a_square = Y_with_inference[clean_idx, 0] # 可以换 column
             # record a_square into the first entry
             H1_matrix_row_space_estimator[:,0] = a_square
         else:
             # Compute b_square
             W1 = np.mat(np.zeros((32, 32))) + 1j * np.mat(np.zeros((32, 32)))
-            W1[i,0] = 1.
+            W1[i,0] = 1. # 可以换 column
             W1 = bf_norm_multiple_stream(W1)
             mtx2outputdata(W1)
             mtx2outputdata(W2)
             Y_with_inference = read_blackbox()
-            b_square = Y_with_inference[clean_idx, 0] 
+            b_square = Y_with_inference[clean_idx, 0] # 可以换 column
             # Compute a_plus_b_square
             W1 = np.mat(np.zeros((32, 32))) + 1j * np.mat(np.zeros((32, 32)))
-            W1[0, 0] = 1/np.sqrt(2) + 1j * 0
-            W1[i, 0] = 1/np.sqrt(2) + 1j * 0
+            W1[0, 0] = 1/np.sqrt(2) + 1j * 0 # 可以换 column
+            W1[i, 0] = 1/np.sqrt(2) + 1j * 0 # 可以换 column
             W1 = bf_norm_multiple_stream(W1)
             mtx2outputdata(W1)
             mtx2outputdata(W2)
             Y_with_inference = read_blackbox()
-            a_plus_b_square = Y_with_inference[clean_idx, 0]
+            a_plus_b_square = Y_with_inference[clean_idx, 0] # 可以换 column
             # Record 
             ab = a_plus_b_square - ( a_square / 2 ) - ( b_square / 2 )
             H1_matrix_row_space_estimator[:, i] = ab
-    
-    # # Seeing the results
-    
-    # H1_matrix = blk.return_H1_matrix()
-    # H1_matrix = np.asarray(H1_matrix)
-    # H1_matrix_pinv = np.linalg.pinv(H1_matrix.T)
-    # Coordinate_Matrix_3 = H1_matrix_pinv @ H1_matrix_row_space_estimator.T
-    # H1_matrix_row_space_estimator_new = H1_matrix.T @ Coordinate_Matrix_3
-    # H1_matrix_row_space_estimator_new = H1_matrix_row_space_estimator_new.T
-    # # print_numpy_array(H1_matrix_row_space_estimator, "H1_matrix_row_space_estimator")
-    # # print_numpy_array(H1_matrix_row_space_estimator_new, "H1_matrix_row_space_estimator_new")
-    
-    # # End of seeing the results
     
     L_est = np.mat(H1_matrix_row_space_estimator)
     L_est = norm_multiple_stream_result(L_est)
@@ -272,15 +268,11 @@ else: # Case 3 and case 4 work here
         # print_numpy_array(np.sqrt(Y_i/Y_0), f"Y_{i}_divides_Y_0")
         ratio_matrix[i,:] = np.sqrt((Y_i / Y_0))[0,:]
     
-    # print(ratio_matrix.shape)
-    # print_numpy_array(ratio_matrix, "ratio_matrix")
-    
     # Step 2: Create a giant rectangle 3-D box
     
     Y_giant = np.zeros((32, 300, 32)) + 1j * np.zeros((32, 300, 32))
     W2 = (np.mat(np.ones((32, 32))) + 1j * np.mat(np.zeros((32, 32)))) * (1/32)
     W2 = bf_norm_multiple_stream(W2)
-    # start_time = time.time()
     for i in range(32):
         W1 = np.mat(np.zeros((32, 32))) + 1j * np.mat(np.zeros((32, 32)))
         W1[i, 0] = 1.
@@ -289,11 +281,6 @@ else: # Case 3 and case 4 work here
         mtx2outputdata(W2)
         Y_one_layer = read_blackbox()
         Y_giant[:,:,i] = Y_one_layer
-    
-    # print_numpy_array(Y_giant[:,:,0], "sheet_0_original")
-    # print_numpy_array(Y_giant[:,:,1], "sheet_1_original")
-    # print_numpy_array(Y_giant[:,:,2], "sheet_2_original")
-    # print_numpy_array(Y_giant[:,:,3], "sheet_3_original")
     
     # Step 3: Retrieve the h vectors
     
@@ -404,55 +391,56 @@ else: # Case 3 and case 4 work here
     
     W2 = (np.mat(np.ones((32, 32))) + 1j * np.mat(np.zeros((32, 32)))) * (1/32)
     W2 = bf_norm_multiple_stream(W2)
+    
+    # 调参数 4， 5：
+    # 基本上重复上面的步骤
+    # 首先是你看我是有 3 个步骤的，先 compute a_square，再是 compute b_square，然后是 a_divide_sqrt_2_plus_b_divide_sqrt_2_square
+    # 在每一个步骤里面，有 2 个参数可以调
+    # 第一个是，W1 matrix，3 个步骤都是针对 column 0，你可以换成 column 1, 2, 3 (记住是 3 个步骤一起换)
+    # 第二个是，Y_with_inference matrix 每次都只截取 column 0，你可以换成 0 to 299 任何一个数 (记住是 3 个步骤一起换)
+    
+    # 调参数 6：
+    # 然后 selected_idx 也可以调
+    # 跟 clean_idx 同一个道理，但是在 case 3, case 4 基本上没有什么 clean 不 clean index 的了，所有 index 都是被污染过的
+    # 所以叫做 selected_idx，没有 restriction 随便选
+    selected_idx = [i for i in range(1, N_tar+1)]
+    
     for i in range(32):
         if i==0:
             # Compute a_square
             W1 = np.mat(np.zeros((32, 32))) + 1j * np.mat(np.zeros((32, 32)))
-            W1[0,0] = 1.
+            W1[0,0] = 1. # 可以换 column
             W1 = bf_norm_multiple_stream(W1)
             mtx2outputdata(W1)
             mtx2outputdata(W2)
             Y_with_inference = read_blackbox()
             estimated_real_Y_without_inference = np.asarray(estimate_real_Y_without_inference(W1, Y_with_inference))
-            a_square = estimated_real_Y_without_inference[1:N_tar+1, 0]
+            a_square = estimated_real_Y_without_inference[selected_idx, 0] # 可以换 column
             # record a_square into the first entry
             H1_matrix_row_space_estimator[:,0] = a_square
         else:
             # Compute b_square
             W1 = np.mat(np.zeros((32, 32))) + 1j * np.mat(np.zeros((32, 32)))
-            W1[i,0] = 1.
+            W1[i,0] = 1. # 可以换 column
             W1 = bf_norm_multiple_stream(W1)
             mtx2outputdata(W1)
             mtx2outputdata(W2)
             Y_with_inference = read_blackbox()
             estimated_real_Y_without_inference = np.asarray(estimate_real_Y_without_inference(W1, Y_with_inference))
-            b_square = estimated_real_Y_without_inference[1:N_tar+1, 0]     
+            b_square = estimated_real_Y_without_inference[selected_idx, 0]# 可以换 column
             # Compute a_plus_b_square
             W1 = np.mat(np.zeros((32, 32))) + 1j * np.mat(np.zeros((32, 32)))
-            W1[0, 0] = 1/np.sqrt(2) + 1j * 0
-            W1[i, 0] = 1/np.sqrt(2) + 1j * 0
+            W1[0, 0] = 1/np.sqrt(2) + 1j * 0 # 可以换 column
+            W1[i, 0] = 1/np.sqrt(2) + 1j * 0 # 可以换 column
             W1 = bf_norm_multiple_stream(W1)
             mtx2outputdata(W1)
             mtx2outputdata(W2)
             Y_with_inference = read_blackbox()
             estimated_real_Y_without_inference = np.asarray(estimate_real_Y_without_inference(W1, Y_with_inference))
-            a_plus_b_square = estimated_real_Y_without_inference[1:N_tar+1, 0]
+            a_plus_b_square = estimated_real_Y_without_inference[selected_idx, 0] # 可以换 column
             # Record 
             ab = a_plus_b_square - ( a_square / 2 ) - ( b_square / 2 )
             H1_matrix_row_space_estimator[:, i] = ab
-    
-    # # Seeing the results
-    
-    # H1_matrix = blk.return_H1_matrix()
-    # H1_matrix = np.asarray(H1_matrix)
-    # H1_matrix_pinv = np.linalg.pinv(H1_matrix.T)
-    # Coordinate_Matrix_3 = H1_matrix_pinv @ H1_matrix_row_space_estimator.T
-    # H1_matrix_row_space_estimator_new = H1_matrix.T @ Coordinate_Matrix_3
-    # H1_matrix_row_space_estimator_new = H1_matrix_row_space_estimator_new.T
-    # # print_numpy_array(H1_matrix_row_space_estimator, "H1_matrix_row_space_estimator")
-    # # print_numpy_array(H1_matrix_row_space_estimator_new, "H1_matrix_row_space_estimator_new")
-    
-    # # End of seeing the results
     
     L_est = np.mat(H1_matrix_row_space_estimator)
     L_est = norm_multiple_stream_result(L_est)
