@@ -471,9 +471,98 @@ else: # Case 3 and case 4 work here
     Score = blk.calc_score(L_est)
     print(f"Score = {Score}")
     
+    # print("=============================")
+    
+    # print("跑跑实验 3")
+    
+    # # 继续哦
+    # # 解释一下我在干什么，这一步的目的是要算出 H1_matrix_square_mixed
+    # # 而 H1_matrix_square_mixed 的 row vector 的 linear span 基本上代表了 np.square(H1_matrix) 的 row vectors 的 linear span
+    # # 注意 np.square(H1_matrix) 的意思是 H1 matrix 去 element-wise square
+    # # 拿到了 H1_matrix_square_mixed，基本上已经很接近很接近我们需要的答案了
+    # # 可是再进一步我目前还没有想到该如何 proceed
+    
+    # H1_matrix_square_mixed = np.zeros((N_tar, 32)) + 1j * np.zeros((N_tar, 32))
+    
+    # W2 = (np.mat(np.ones((32, 32))) + 1j * np.mat(np.zeros((32, 32)))) * (1/32)
+    # W2 = bf_norm_multiple_stream(W2)
+    # for j in range(N_tar):
+    #     for i in range(32):
+    #         v = ratio_matrix[:,j]
+    #         v = v.reshape((32,1))
+    #         # x = np.zeros((32, 1)) + 1j * np.zeros((32, 1))
+    #         # x[i][0] =  1.0 + 0.0 * 1j
+    #         A = np.zeros((32, 32), dtype=complex)
+    #         A[i][i] = np.conjugate(1 / v[i][0])
+    #         # print_numpy_array(np.dot(np.conjugate(A), v), f"A_mul_v_at_row_{i}")
+    #         W1 = np.mat(A)
+    #         W1 = bf_norm_multiple_stream(W1)
+    #         input_weight_1 = mtx2outputdata(W1)
+    #         input_weight_2 = mtx2outputdata(W2)
+    #         Y_with_inference = blk.blackboxSystem(input_weight_1, input_weight_2)
+    #         Y_with_inference = read_blackbox(Y_with_inference)
+    #         estimated_real_Y_without_inference = np.asarray(estimate_real_Y_without_inference(W1, Y_with_inference))
+    #         H1_matrix_square_mixed[j, i] = estimated_real_Y_without_inference[0,j]
+    
+    # # H1_matrix_square_mixed = (H1_matrix_square_mixed.T / np.linalg.norm(H1_matrix_square_mixed, axis = 1)).T
+    # # print(f"np.square(H1_matrix).shape = {np.square(H1_matrix).shape}")
+    # # print(f"H1_matrix_square_mixed.shape = {H1_matrix_square_mixed.shape}")
+    # print_numpy_array(np.square(H1_matrix), "H1_matrix_square_real")
+    # print_numpy_array(H1_matrix_square_mixed, "H1_matrix_square_mixed")
+    
+    # # 验证是否正确
+    # # 先要去拿 coordinate matrix
+    # H1_matrix_square_pinv = np.linalg.pinv(np.square(H1_matrix).T)
+    # Coordinate_Matrix = H1_matrix_square_pinv @ H1_matrix_square_mixed.T
+    # # 从 coordinate matrix 拿回原本的 H1_matrix_square_mixed matrix
+    # H1_matrix_square_mixed_new = np.square(H1_matrix).T @ Coordinate_Matrix
+    # H1_matrix_square_mixed_new = H1_matrix_square_mixed_new.T
+    # print_numpy_array(H1_matrix_square_mixed_new, f"H1_matrix_square_mixed_new")
+    
+    # # 验证出来我的想法是成功的
+    
+    # # 可是依然不是最终的结果
+    # L_est = np.mat(H1_matrix_square_mixed)
+    # L_est = norm_multiple_stream_result(L_est)
+    # safe_print('END')
+    # line2 = stdin.readline().strip()
+    # L_est = mtx2outputdata_result(L_est)
+    # Score = blk.calc_score(L_est)
+    # print(f"Score = {Score}")
+    
+    
     print("=============================")
     
-    print("跑跑实验 3")
+    print("跑跑实验 4")
+    
+    W2 = (np.mat(np.ones((32, 32))) + 1j * np.mat(np.zeros((32, 32)))) * (1/32)
+    W2 = bf_norm_multiple_stream(W2)
+    W2 = bf_norm_multiple_stream(W2)
+    W1 = np.mat(np.zeros((32, 32))) + 1j * np.mat(np.zeros((32, 32)))
+    W1[0, 0] = 1.
+    W1 = bf_norm_multiple_stream(W1)
+    input_weight_1 = mtx2outputdata(W1)
+    input_weight_2 = mtx2outputdata(W2)
+    Y_with_inference = blk.blackboxSystem(input_weight_1, input_weight_2)
+    Y_with_inference = read_blackbox(Y_with_inference)
+    estimated_real_Y_without_inference = np.asarray(estimate_real_Y_without_inference(W1, Y_with_inference))
+    sheet_0 = estimated_real_Y_without_inference[1:,:]
+    
+    U, S, Vh = np.linalg.svd(sheet_0)
+    estimated_basis_vectors = U[:, :N_tar]
+    # estimated_basis_vectors = (estimated_basis_vectors / np.linalg.norm(estimated_basis_vectors.T, axis = 1))
+    
+    real_basis_vectors = blk.return_H3_matrix()
+    real_basis_vectors = np.asarray(real_basis_vectors)
+    real_basis_vectors = real_basis_vectors.T[1:,:]
+    real_basis_vectors_pinv = np.linalg.pinv(real_basis_vectors)
+    Coordinate_Matrix = real_basis_vectors_pinv @ estimated_basis_vectors
+    print(f"Coordinate_Matrix.shape = {Coordinate_Matrix.shape}")
+    print_numpy_array(Coordinate_Matrix, "Coordinate_Matrix_not_normalised")
+    
+    print("=============================")
+    
+    print("跑跑实验 5")
     
     # 继续哦
     # 解释一下我在干什么，这一步的目的是要算出 H1_matrix_square_mixed
@@ -486,28 +575,21 @@ else: # Case 3 and case 4 work here
     
     W2 = (np.mat(np.ones((32, 32))) + 1j * np.mat(np.zeros((32, 32)))) * (1/32)
     W2 = bf_norm_multiple_stream(W2)
-    for j in range(N_tar):
-        for i in range(32):
-            v = ratio_matrix[:,j]
-            v = v.reshape((32,1))
-            # x = np.zeros((32, 1)) + 1j * np.zeros((32, 1))
-            # x[i][0] =  1.0 + 0.0 * 1j
-            A = np.zeros((32, 32), dtype=complex)
-            A[i][i] = np.conjugate(1 / v[i][0])
-            # print_numpy_array(np.dot(np.conjugate(A), v), f"A_mul_v_at_row_{i}")
-            W1 = np.mat(A)
-            W1 = bf_norm_multiple_stream(W1)
-            input_weight_1 = mtx2outputdata(W1)
-            input_weight_2 = mtx2outputdata(W2)
-            Y_with_inference = blk.blackboxSystem(input_weight_1, input_weight_2)
-            Y_with_inference = read_blackbox(Y_with_inference)
-            estimated_real_Y_without_inference = np.asarray(estimate_real_Y_without_inference(W1, Y_with_inference))
-            H1_matrix_square_mixed[j, i] = estimated_real_Y_without_inference[0,j]
+    for i in range(32):
+        W1 = np.mat(np.zeros((32, 32))) + 1j * np.mat(np.zeros((32, 32)))
+        W1[i, 0] = 1.
+        W1 = bf_norm_multiple_stream(W1)
+        input_weight_1 = mtx2outputdata(W1)
+        input_weight_2 = mtx2outputdata(W2)
+        Y_with_inference = blk.blackboxSystem(input_weight_1, input_weight_2)
+        Y_with_inference = read_blackbox(Y_with_inference)
+        estimated_real_Y_without_inference = np.asarray(estimate_real_Y_without_inference(W1, Y_with_inference))
+        H1_matrix_square_mixed[:, i] = estimated_real_Y_without_inference[:N_tar, 0]
     
     # H1_matrix_square_mixed = (H1_matrix_square_mixed.T / np.linalg.norm(H1_matrix_square_mixed, axis = 1)).T
     # print(f"np.square(H1_matrix).shape = {np.square(H1_matrix).shape}")
     # print(f"H1_matrix_square_mixed.shape = {H1_matrix_square_mixed.shape}")
-    print_numpy_array(np.square(H1_matrix), "np.square(H1_matrix)")
+    print_numpy_array(np.square(H1_matrix), "H1_matrix_square_real")
     print_numpy_array(H1_matrix_square_mixed, "H1_matrix_square_mixed")
     
     # 验证是否正确
@@ -530,10 +612,149 @@ else: # Case 3 and case 4 work here
     Score = blk.calc_score(L_est)
     print(f"Score = {Score}")
     
+    print("=============================")
+    
+    print("跑跑实验 6")
+    
+    # 继续哦
+    # 解释一下我在干什么，这一步的目的是要算出 H1_matrix_square_mixed
+    # 而 H1_matrix_square_mixed 的 row vector 的 linear span 基本上代表了 np.square(H1_matrix) 的 row vectors 的 linear span
+    # 注意 np.square(H1_matrix) 的意思是 H1 matrix 去 element-wise square
+    # 拿到了 H1_matrix_square_mixed，基本上已经很接近很接近我们需要的答案了
+    # 可是再进一步我目前还没有想到该如何 proceed
+    
+    H1_matrix_square_mixed = np.zeros((N_tar, 32)) + 1j * np.zeros((N_tar, 32))
+    
+    W2 = (np.mat(np.ones((32, 32))) + 1j * np.mat(np.zeros((32, 32)))) * (1/32)
+    W2 = bf_norm_multiple_stream(W2)
+    for i in range(32):
+        W1 = np.mat(np.zeros((32, 32))) + 1j * np.mat(np.zeros((32, 32)))
+        W1[i, 0] = 1.
+        W1 = bf_norm_multiple_stream(W1)
+        input_weight_1 = mtx2outputdata(W1)
+        input_weight_2 = mtx2outputdata(W2)
+        Y_with_inference = blk.blackboxSystem(input_weight_1, input_weight_2)
+        Y_with_inference = read_blackbox(Y_with_inference)
+        estimated_real_Y_without_inference = np.asarray(estimate_real_Y_without_inference(W1, Y_with_inference))
+        H1_matrix_square_mixed[:, i] = estimated_real_Y_without_inference[1:N_tar+1, 0]
+    
+    
+    W2 = (np.mat(np.ones((32, 32))) + 1j * np.mat(np.zeros((32, 32)))) * (1/32)
+    W2 = bf_norm_multiple_stream(W2)
+    W1 = np.mat(np.zeros((32, 32))) + 1j * np.mat(np.zeros((32, 32)))
+    W1[0, 0] = 1.
+    W1 = bf_norm_multiple_stream(W1)
+    input_weight_1 = mtx2outputdata(W1)
+    input_weight_2 = mtx2outputdata(W2)
+    Y_with_inference = blk.blackboxSystem(input_weight_1, input_weight_2)
+    Y_with_inference = read_blackbox(Y_with_inference)
+    estimated_real_Y_without_inference = np.asarray(estimate_real_Y_without_inference(W1, Y_with_inference))
+    sheet_0 = estimated_real_Y_without_inference[1:,:]
+    
+    U, S, Vh = np.linalg.svd(sheet_0)
+    estimated_basis_vectors = U[:, :N_tar]
+    
+    L_matrix = estimated_basis_vectors[:N_tar, :]
+    L_matrix_inverse = np.linalg.inv(L_matrix)
+    
+    H1_matrix_square_mixed_decomposed = np.dot(L_matrix_inverse, H1_matrix_square_mixed)
+    print_numpy_array(H1_matrix_square_mixed_decomposed, "H1_matrix_square_mixed_decomposed")
+    
+    H1_matrix = blk.return_H1_matrix()
+    H1_matrix = np.asarray(H1_matrix)
+    H1_matrix_squared = np.square(H1_matrix)
+    H1_matrix_squared_pinv = np.linalg.pinv(H1_matrix_squared.T)
+    Coordinate_Matrix_2 = H1_matrix_squared_pinv @ H1_matrix_square_mixed_decomposed.T
+    print(f"Coordinate_Matrix_2.shape = {Coordinate_Matrix_2.shape}")
+    print_numpy_array(Coordinate_Matrix_2, "Coordinate_Matrix_2")
+    
+    H1_matrix_decomposed_sqrt = np.sqrt(H1_matrix_square_mixed_decomposed)
+    
+    L_est = np.mat(H1_matrix_decomposed_sqrt)
+    L_est = norm_multiple_stream_result(L_est)
+    safe_print('END')
+    line2 = stdin.readline().strip()
+    L_est = mtx2outputdata_result(L_est)
+    Score = blk.calc_score(L_est)
+    print(f"Score = {Score}")
     
     print("=============================")
     
-    # print("跑跑实验 4")
+    print("跑跑实验 7")
+    
+    # 继续哦
+    # 解释一下我在干什么，这一步的目的是要算出 H1_matrix_square_mixed
+    # 而 H1_matrix_square_mixed 的 row vector 的 linear span 基本上代表了 np.square(H1_matrix) 的 row vectors 的 linear span
+    # 注意 np.square(H1_matrix) 的意思是 H1 matrix 去 element-wise square
+    # 拿到了 H1_matrix_square_mixed，基本上已经很接近很接近我们需要的答案了
+    # 可是再进一步我目前还没有想到该如何 proceed
+    
+    H1_matrix_row_space_estimator = np.zeros((N_tar, 32)) + 1j * np.zeros((N_tar, 32))
+    
+    W2 = (np.mat(np.ones((32, 32))) + 1j * np.mat(np.zeros((32, 32)))) * (1/32)
+    W2 = bf_norm_multiple_stream(W2)
+    for i in range(32):
+        if i==0:
+            # Compute a_square
+            W1 = np.mat(np.zeros((32, 32))) + 1j * np.mat(np.zeros((32, 32)))
+            W1[0,0] = 1.
+            W1 = bf_norm_multiple_stream(W1)
+            input_weight_1 = mtx2outputdata(W1)
+            input_weight_2 = mtx2outputdata(W2)
+            Y_with_inference = blk.blackboxSystem(input_weight_1, input_weight_2)
+            Y_with_inference = read_blackbox(Y_with_inference)
+            estimated_real_Y_without_inference = np.asarray(estimate_real_Y_without_inference(W1, Y_with_inference))
+            a_square = estimated_real_Y_without_inference[1:N_tar+1, 0]
+            # record a_square into the first entry
+            H1_matrix_row_space_estimator[:,0] = a_square
+        else:
+            # Compute b_square
+            W1 = np.mat(np.zeros((32, 32))) + 1j * np.mat(np.zeros((32, 32)))
+            W1[i,0] = 1.
+            W1 = bf_norm_multiple_stream(W1)
+            input_weight_1 = mtx2outputdata(W1)
+            input_weight_2 = mtx2outputdata(W2)
+            Y_with_inference = blk.blackboxSystem(input_weight_1, input_weight_2)
+            Y_with_inference = read_blackbox(Y_with_inference)
+            estimated_real_Y_without_inference = np.asarray(estimate_real_Y_without_inference(W1, Y_with_inference))
+            b_square = estimated_real_Y_without_inference[1:N_tar+1, 0]     
+            # Compute a_plus_b_square
+            W1 = np.mat(np.zeros((32, 32))) + 1j * np.mat(np.zeros((32, 32)))
+            W1[0, 0] = 1/np.sqrt(2) + 1j * 0
+            W1[i, 0] = 1/np.sqrt(2) + 1j * 0
+            W1 = bf_norm_multiple_stream(W1)
+            input_weight_1 = mtx2outputdata(W1)
+            input_weight_2 = mtx2outputdata(W2)
+            Y_with_inference = blk.blackboxSystem(input_weight_1, input_weight_2)
+            Y_with_inference = read_blackbox(Y_with_inference)
+            estimated_real_Y_without_inference = np.asarray(estimate_real_Y_without_inference(W1, Y_with_inference))
+            a_plus_b_square = estimated_real_Y_without_inference[1:N_tar+1, 0]
+            # Record 
+            ab = a_plus_b_square - ( a_square / 2 ) - ( b_square / 2 )
+            H1_matrix_row_space_estimator[:, i] = ab
+    
+    
+    H1_matrix = blk.return_H1_matrix()
+    H1_matrix = np.asarray(H1_matrix)
+    H1_matrix_pinv = np.linalg.pinv(H1_matrix.T)
+    Coordinate_Matrix_3 = H1_matrix_pinv @ H1_matrix_row_space_estimator.T
+    H1_matrix_row_space_estimator_new = H1_matrix.T @ Coordinate_Matrix_3
+    H1_matrix_row_space_estimator_new = H1_matrix_row_space_estimator_new.T
+    print_numpy_array(H1_matrix_row_space_estimator, "H1_matrix_row_space_estimator")
+    print_numpy_array(H1_matrix_row_space_estimator_new, "H1_matrix_row_space_estimator_new")
+    
+    L_est = np.mat(H1_matrix_row_space_estimator)
+    L_est = norm_multiple_stream_result(L_est)
+    safe_print('END')
+    line2 = stdin.readline().strip()
+    L_est = mtx2outputdata_result(L_est)
+    Score = blk.calc_score(L_est)
+    print(f"Score = {Score}")
+    
+    print("=============================")
+    
+    
+    # print("跑跑实验 8")
     
     # # 继续哦
     

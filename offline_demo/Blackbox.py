@@ -154,22 +154,20 @@ def calc_score(input_data):
 
     dl_channel = signal_dl0channel.T
     dl_Nullproj = np.eye(32) - dl_channel*np.linalg.inv(dl_channel.H*dl_channel)*dl_channel.H
+    after_proj_power = dl_Nullproj*data_para['DL_ch_set_DL0'][:,-signal_num_targ:]
     # if signal_num_targ == 2:
     #     after_proj_power = dl_Nullproj*data_para['DL_ch_set_DL0']
     # else:
     #     exit_with_judge_error(f'Invalid signal num : {signal_num}')
-    # ************ Changes start here **********************
-    after_proj_power = dl_Nullproj*data_para['DL_ch_set_DL0'][:,-signal_num_targ:]
-    # ************ Changes end here **********************
     result = 0
 
+    print(f"signal_num_targ = {signal_num_targ}")
     for ii in range(signal_num_targ):
         result_tmp = np.linalg.norm(after_proj_power[:,ii])**2
+        print(f"ii = {ii} ; result_tmp = {result_tmp}")
         result = result + result_tmp
 
-    # ************ Changes start here **********************
     result = 100*(1 - result/signal_num_targ)
-    # ************ Changes end here **********************
     result = np.round(result,decimals=6)
     accept_with_score(result) #The submission code need this line
     return result
@@ -306,6 +304,12 @@ def blackboxSystem(input_1,input_2):
 
 def return_H1_matrix():
     return np.asarray(data_para['DL_ch_set_DL0'].T)[-signal_num_targ:,:]
+
+def return_H2_matrix():
+    return np.asarray(data_para['DL_ch_set_DL1'].T)[-signal_num_targ:,:]
+
+def return_H3_matrix():
+    return np.asarray(data_para['DL_ch_set_UL'].T)[-signal_num_targ:,:]
 
 def blackboxSystem_no_h(input_1,input_2):
     global data_para, signal_num_targ
