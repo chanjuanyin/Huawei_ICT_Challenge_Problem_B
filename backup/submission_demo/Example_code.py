@@ -2,7 +2,8 @@
 import numpy as np
 import sys
 from sys import stdin
-import time
+
+
 
 def safe_print(n):
     print(n)
@@ -67,30 +68,16 @@ def read_blackbox():
     n = n.T # This step is to match the size of Y in the document
     return n
 
-# def read_blackbox(input_data):
-#     # line = stdin.readline().strip()
-#     m = input_data.split(' ')
-#     complex_len = int(len(m)/2)
-#     n = np.zeros(shape=(complex_len),dtype='complex128')
-#     for ii in range(len(m)):
-#         m[ii] = float(m[ii])
-#     for ii in range(complex_len):
-#         n[ii] = m[2*ii] + m[2*ii+1]*1j
-#     n = n.reshape(300,32) # This step is to reshape Y to a matrix
-#     n = n.T # This step is to match the size of Y in the document
-#     return n
 # ---Step 1: Input 'Start'---
 line1 = stdin.readline().strip()
 
 # ---Step 1: Output W1 W2---
 # N_stream1, N_stream2 can be [1,32]
-N_stream1 = 32
-N_stream2 = 32
+N_stream1 = 4 
+N_stream2 = 4
 # W1, W2 Example
 W1 = np.mat((np.random.randn(32,N_stream1) + 1j*np.random.randn(32,N_stream1)))
-W2 = W1
-W1 = np.mat(np.zeros((32, 32))) + 1j * np.mat(np.zeros((32, 32)))
-W1[0,0] = 1.0 + 0.0*1j
+W2 = np.mat((np.random.randn(32,N_stream2) + 1j*np.random.randn(32,N_stream2)))
 # W1 W2 Normalization
 W1 = bf_norm_multiple_stream(W1)
 W2 = bf_norm_multiple_stream(W2)
@@ -101,75 +88,39 @@ mtx2outputdata(W2)
 # ---Step 3: Input Y---
 Y = read_blackbox()
 
-
-def test_large(vector, order=0.1):
-    return np.sum(np.abs(vector[0])) > order
-
-N_tar=-1
-h_idx = []
-test_order = 5
-if test_large(Y[0], order=test_order):
-    h_idx.append(0)
-
-
-for i in range(1, 32):
-    W1 = np.mat(np.zeros((32, 32))) + 1j * np.mat(np.zeros((32, 32)))
-    W1[i,0] = 1.0 + 0.0*1j
+# ---Step 3: Output another W1 W2 for each interaction process (if interaction continue)---
+inter_num = 10 #Contestants can control the number of interaction
+# N_stream1, N_stream2 can be [1,...,32]
+N_stream1 = 1 
+N_stream2 = 32
+# W1, W2 Example
+W1 = np.mat((np.random.randn(32,N_stream1) + 1j*np.random.randn(32,N_stream1)))
+W2 = np.mat((np.random.randn(32,N_stream2) + 1j*np.random.randn(32,N_stream2)))
+for ii in range(inter_num-1):
+    # W1 W2 Normalization
     W1 = bf_norm_multiple_stream(W1)
-    W2 = W1
+    W2 = bf_norm_multiple_stream(W2)
     # Output W1 W2
     mtx2outputdata(W1)
     mtx2outputdata(W2)
     # Input Y
-    Y01 = read_blackbox()
-    if test_large(Y01[i], order=test_order):
-        h_idx.append(i)
-        
-    else: #not interference
-        if N_tar != -1:
-            if len(h_idx) >10:
-                U, S, Vh = np.linalg.svd(Y01)
-                tolerance = 1e-5 
-                rank = np.sum(S > tolerance)
-                N_tar = rank -1
-            # assert rank == N_tar
-            # assert np.linalg.matrix_rank(y_01) == N_tar
-        else:
-            U, S, Vh = np.linalg.svd(Y01)
-            tolerance = 1e-5 
-            rank = np.sum(S > tolerance)
-            N_tar = rank    
-if N_tar == -1: #means case 3 case 4
-    
-    for i in range(1, 32):
-        W1 = np.mat(np.zeros((32, 32))) + 1j * np.mat(np.zeros((32, 32)))
-        W1[i,0] = 1.0 + 0.0*1j
-        W1 = bf_norm_multiple_stream(W1)
-        W2 = W1
-        # Output W1 W2
-        mtx2outputdata(W1)
-        mtx2outputdata(W2)
-        # Input Y
-        Y01 = read_blackbox()
-            
-        
-        if N_tar != -1:
-            if len(h_idx) >10:
-                U, S, Vh = np.linalg.svd(Y01)
-                tolerance = 1e-5 
-                rank = np.sum(S > tolerance)
-                N_tar = rank -1
-            # assert rank == N_tar
-            # assert np.linalg.matrix_rank(y_01) == N_tar
-        else:
-            U, S, Vh = np.linalg.svd(Y01)
-            tolerance = 1e-5 
-            rank = np.sum(S > tolerance)
-            N_tar = rank    
-            
-            
+    Y = read_blackbox()
+
+    # Contestants can write their code here to process the Y data to obtain the W1 and W2 they want to input for the next iteration.
+
+    #******Example code*******
+    N_stream1 = 1 
+    N_stream2 = 32
+    W1 = np.mat((np.random.randn(32,N_stream1) + 1j*np.random.randn(32,N_stream1)))
+    W2 = np.mat((np.random.randn(32,N_stream2) + 1j*np.random.randn(32,N_stream2)))
+    #******Example code end*******
+
+
+#At the end of interation, the estimated L_est need to be obtained.
+
+#******Example code*******
 # N_target can be [1,10]
-N_target = N_tar # Notices that the N_target is different for each case. Contestants program need to estimate the number of target signals first.
+N_target = 4 # Notices that the N_target is different for each case. Contestants program need to estimate the number of target signals first.
 
 L_est = np.mat((np.random.randn(N_target,32) + 1j*np.random.randn(N_target,32)))
 # L_est Normalization
@@ -187,6 +138,3 @@ line2 = stdin.readline().strip()
 
 # Output L_est
 mtx2outputdata_result(L_est)
-# print("Number of signal = ",N_tar)
-# print(h_idx)
-# print("number of interference =",len(h_idx))

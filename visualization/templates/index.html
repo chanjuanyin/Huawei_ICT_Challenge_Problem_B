@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Matrix Editor</title>
+    <style>
+        td {
+            width: 40px;
+            height: 40px;
+            text-align: center;
+        }
+    </style>
+</head>
+<body>
+    <h1>Matrix Editor</h1>
+
+    <h2>Matrix W1</h2>
+    <form action="/update_matrices" method="post">
+        <table>
+            {% for i in range(32) %}
+                <tr>
+                    {% for j in range(32) %}
+                        <td>
+                            <input type="text" name="matrix_W1_{{ i }}_{{ j }}" value="{{ matrix_W1[i,j] }}">
+                        </td>
+                    {% endfor %}
+                </tr>
+            {% endfor %}
+        </table>
+
+    <h2>Matrix W2</h2>
+        <table>
+            {% for i in range(32) %}
+                <tr>
+                    {% for j in range(32) %}
+                        <td>
+                            <input type="text" name="matrix_W2_{{ i }}_{{ j }}" value="{{ matrix_W2[i,j] }}">
+                        </td>
+                    {% endfor %}
+                </tr>
+            {% endfor %}
+        </table>
+
+    <h2>Select Y Matrix:</h2>
+    <form action="/update_matrices" method="post">
+        <select name="selected_Y">
+            {% for y_name in y_matrices.keys() %}
+                <option value="{{ y_name }}" {% if y_name == selected_Y %}selected{% endif %}>{{ y_name }}</option>
+            {% endfor %}
+        </select>
+        <button type="submit">Update Y Matrix</button>
+    </form>
+
+    <h2>Matrix Y</h2>
+    <table>
+        {% for i in range(y_matrices[selected_Y].shape[0]) %}
+            <tr>
+                {% for j in range(y_matrices[selected_Y].shape[1]) %}
+                <td style="background-color: {{ colors_Y[i][j] }}">{{y_matrices[selected_Y][i,j] }}</td>
+                {% endfor %}
+            </tr>
+        {% endfor %}
+    </table>
+</body>
+</html>
